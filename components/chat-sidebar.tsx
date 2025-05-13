@@ -12,6 +12,7 @@ import {
   Plus,
   CornerDownLeft,
   Settings,
+  Paperclip,
 } from "lucide-react";
 import ChatMessage from "./chat-message";
 import {
@@ -40,6 +41,7 @@ interface ChatSidebarProps {
   chatHistory: ChatHistoryItem[];
   onLoadThread: (threadId: string) => void;
   currentThreadId: string;
+  onFileUpload?: (file: File) => void;
 }
 
 export default function ChatSidebar({
@@ -54,6 +56,7 @@ export default function ChatSidebar({
   chatHistory,
   onLoadThread,
   currentThreadId,
+  onFileUpload,
 }: ChatSidebarProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(
@@ -121,14 +124,13 @@ export default function ChatSidebar({
   };
 
   // Handle form submission with error handling
-  const handleFormSubmitWithErrorHandling = (
+  const handleFormSubmitWithErrorHandling = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
     setError(null);
-
     try {
-      handleSubmit(e);
+      await handleSubmit(e);
     } catch (err) {
       setError("Failed to send message. Please try again.");
       console.error("Error submitting form:", err);
@@ -140,7 +142,7 @@ export default function ChatSidebar({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       const form = e.currentTarget.form;
-      if (form && input.trim()) {
+      if (form) {
         handleFormSubmitWithErrorHandling(
           new Event("submit") as unknown as React.FormEvent<HTMLFormElement>
         );
@@ -163,6 +165,21 @@ export default function ChatSidebar({
     setSurveyCompleted(true);
     localStorage.setItem("surveyCompleted", "true");
     localStorage.setItem("userPreferences", JSON.stringify(preferences));
+  };
+
+  // Add file input ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Add file handling functions
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onFileUpload) {
+      onFileUpload(file);
+    }
   };
 
   return (
@@ -277,18 +294,20 @@ export default function ChatSidebar({
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask me anything..."
-                  className="w-full border rounded-md p-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[60px]"
+                  className="w-full border rounded-md p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[60px]"
                   rows={2}
                 />
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="absolute bottom-2 right-2 h-8 w-8 bg-blue-500 hover:bg-blue-600"
-                  disabled={isLoading || !input.trim()}
-                >
-                  <Send className="h-4 w-4" />
-                  <span className="sr-only">Send message</span>
-                </Button>
+                <div className="absolute bottom-2 right-2">
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="h-8 w-8 bg-blue-500 hover:bg-blue-600"
+                    disabled={isLoading || !input.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                    <span className="sr-only">Send message</span>
+                  </Button>
+                </div>
               </div>
             </form>
             {error && (

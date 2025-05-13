@@ -8,6 +8,7 @@ import ChatSidebar from "@/components/chat-sidebar";
 import SimplePdfViewer from "@/components/simple-pdf-viewer";
 import InitialSurvey from "@/components/initial-survey";
 import type { Message } from "ai";
+import { useChat } from "ai/react";
 
 // Define a chat thread type
 interface ChatThread {
@@ -20,8 +21,6 @@ interface ChatThread {
 export default function Home() {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [hasPdf, setHasPdf] = useState(false);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [currentThreadId, setCurrentThreadId] = useState(nanoid());
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [threads, setThreads] = useState<ChatThread[]>([
@@ -32,6 +31,44 @@ export default function Home() {
       createdAt: new Date(),
     },
   ]);
+
+  // Initialize useChat hook with message processing
+  const {
+    messages: currentMessages,
+    input,
+    handleInputChange,
+    handleSubmit: handleChatSubmit,
+    isLoading,
+    setMessages,
+  } = useChat({
+    api: "/api/chat",
+    onResponse: (response) => {
+      console.log("Chat response received:", response);
+      if (!response.ok) {
+        console.error("Error in chat response:", response.statusText);
+      }
+    },
+    onFinish: () => {
+      console.log("Chat response finished. Current messages:", currentMessages);
+      // Update threads with the new messages
+      setThreads((prevThreads) =>
+        prevThreads.map((thread) => {
+          if (thread.id === currentThreadId) {
+            return {
+              ...thread,
+              messages: currentMessages,
+              name:
+                thread.messages.length === 0 ? input.slice(0, 30) : thread.name,
+            };
+          }
+          return thread;
+        })
+      );
+    },
+    body: {
+      id: currentThreadId,
+    },
+  });
 
   // Get current thread
   const currentThread =
@@ -74,74 +111,32 @@ export default function Home() {
     }
   }, [threads]);
 
-  // Handle input change
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-  };
-
-  // Handle form submission with placeholder responses
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Handle form submission
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     if (!input.trim()) return;
 
-    // Add user message
-    const userMessage: Message = {
-      id: nanoid(),
-      role: "user",
-      content: input,
-      createdAt: new Date(),
-    };
-
-    // Update thread name if this is the first message
-    let updatedThreads = threads.map((thread) => {
-      if (thread.id === currentThreadId) {
-        // If this is the first message, use it as the thread name
-        const name =
-          thread.messages.length === 0 ? input.slice(0, 30) : thread.name;
-        return {
-          ...thread,
-          name,
-          messages: [...thread.messages, userMessage],
-        };
-      }
-      return thread;
-    });
-
-    setThreads(updatedThreads);
-    setInput("");
-    setIsLoading(true);
+    console.log("Form submitted with input:", input);
 
     // Set hasInteracted to true
     if (!hasInteracted) {
       setHasInteracted(true);
     }
 
-    // Simulate response delay
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: nanoid(),
-        role: "assistant",
-        content:
-          "This is a placeholder response. The AI functionality has been temporarily disabled.",
-        createdAt: new Date(),
-      };
-
-      // Add assistant message to the current thread
-      updatedThreads = updatedThreads.map((thread) => {
-        if (thread.id === currentThreadId) {
-          return {
-            ...thread,
-            messages: [...thread.messages, assistantMessage],
-          };
-        }
-        return thread;
-      });
-
-      setThreads(updatedThreads);
-      setIsLoading(false);
-    }, 1000);
+    // Submit the chat
+    try {
+      console.log("Submitting chat with current thread ID:", currentThreadId);
+      await handleChatSubmit(e);
+      console.log("Chat submitted successfully");
+    } catch (error) {
+      console.error("Error submitting chat:", error);
+    }
   };
+
+  // Effect to log messages when they change
+  useEffect(() => {
+    console.log("Messages updated:", currentMessages);
+  }, [currentMessages]);
 
   // Create a new chat thread
   const handleNewChat = () => {
@@ -159,16 +154,17 @@ export default function Home() {
 
     setCurrentThreadId(newThreadId);
     setHasInteracted(false);
-    setInput("");
+    setMessages([]); // Clear current messages
   };
 
   // Load a chat thread from history
   const handleLoadThread = (threadId: string) => {
-    setCurrentThreadId(threadId);
     const thread = threads.find((t) => t.id === threadId);
-    setHasInteracted(
-      thread?.messages.length ? thread.messages.length > 0 : false
-    );
+    if (thread) {
+      setCurrentThreadId(threadId);
+      setMessages(thread.messages); // Set messages for the loaded thread
+      setHasInteracted(thread.messages.length > 0);
+    }
   };
 
   const suggestions = [
@@ -193,16 +189,26 @@ export default function Home() {
       // Reset everything in one go to avoid multiple re-renders
       const newThreadId = nanoid();
       setCurrentThreadId(newThreadId);
+
+      // Create initial message about the PDF
+      const initialMessage: Message = {
+        id: nanoid(),
+        role: "user",
+        content:
+          "I've uploaded a research paper. Please analyze it and help me understand its key points.",
+        createdAt: new Date(),
+      };
+
       setThreads([
         {
           id: newThreadId,
           name: "New Chat",
-          messages: [],
+          messages: [initialMessage],
           createdAt: new Date(),
         },
       ]);
-      setInput("");
-      setHasInteracted(false);
+      setMessages([initialMessage]); // Set initial message
+      setHasInteracted(true); // Set hasInteracted to true since we have a message
       setHasPdf(true);
       setSurveyCompleted(false); // Reset survey state when new PDF is uploaded
     } else {
@@ -225,10 +231,10 @@ export default function Home() {
           </div>
         ) : (
           <ChatSidebar
-            messages={currentThread.messages}
+            messages={currentMessages}
             input={input}
             handleInputChange={handleInputChange}
-            handleSubmit={handleSubmit}
+            handleSubmit={handleFormSubmit}
             suggestions={suggestions}
             isLoading={isLoading}
             hasInteracted={hasInteracted}
