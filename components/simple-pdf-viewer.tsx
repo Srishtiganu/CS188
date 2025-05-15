@@ -9,9 +9,10 @@ import { Upload, FileText, AlertCircle } from "lucide-react";
 export default function SimplePdfViewer({
   onPdfChange,
 }: {
-  onPdfChange?: (pdfUrl: string | null) => void;
+  onPdfChange?: (pdfUrl: string | null, pdfData?: ArrayBuffer | null) => void;
 }) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [pdfName, setPdfName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -31,11 +32,13 @@ export default function SimplePdfViewer({
   useEffect(() => {
     // Only notify if we have an onPdfChange handler
     if (onPdfChange) {
-      onPdfChange(pdfUrl);
+      onPdfChange(pdfUrl, pdfData);
     }
-  }, [pdfUrl]); // onPdfChange is intentionally omitted as it's a prop and would cause unnecessary updates
+  }, [pdfUrl, pdfData]); // onPdfChange is intentionally omitted as it's a prop and would cause unnecessary updates
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
@@ -54,11 +57,26 @@ export default function SimplePdfViewer({
         URL.revokeObjectURL(pdfUrl);
       }
 
-      // Create a URL for the file
-      const fileUrl = URL.createObjectURL(file);
-      setPdfUrl(fileUrl);
-      setPdfName(file.name);
-      setIsLoading(false);
+      try {
+        // Read file as ArrayBuffer
+        const fileData = await file.arrayBuffer();
+        setPdfData(fileData);
+
+        // Create a URL for the file
+        const fileUrl = URL.createObjectURL(file);
+        setPdfUrl(fileUrl);
+        setPdfName(file.name);
+
+        // Notify parent with both URL and data
+        if (onPdfChange) {
+          onPdfChange(fileUrl, fileData);
+        }
+      } catch (error) {
+        setError("Failed to read PDF file");
+        console.error("Error reading PDF:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 

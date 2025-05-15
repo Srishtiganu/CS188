@@ -11,13 +11,29 @@ If you don't know the answer to something, be honest about it.`;
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, pdfData } = await req.json();
 
   // Format messages for Gemini
-  const formattedMessages = messages.map((msg: any) => ({
+  const formattedMessages = messages.map((msg: any, index: number) => ({
     role: msg.role,
     content:
-      typeof msg.content === "string"
+      // Only include PDF data with the first user message
+      msg.role === "user" && pdfData && index === 0
+        ? [
+            {
+              type: "text",
+              text:
+                typeof msg.content === "string"
+                  ? msg.content
+                  : msg.content[0]?.text || "",
+            },
+            {
+              type: "file",
+              data: new Uint8Array(pdfData).buffer,
+              mimeType: "application/pdf",
+            },
+          ]
+        : typeof msg.content === "string"
         ? msg.content
         : msg.content[0]?.text || "",
   }));
@@ -32,8 +48,9 @@ export async function POST(req: Request) {
     const result = streamText({
       model: google("gemini-2.0-flash"),
       messages: fullMessages,
-      maxTokens: 4096,
-      temperature: 0.7,
+      onError: (error) => {
+        console.error("Error generating response:", error);
+      },
     });
 
     return result.toDataStreamResponse();

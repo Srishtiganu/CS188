@@ -21,6 +21,7 @@ interface ChatThread {
 export default function Home() {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [hasPdf, setHasPdf] = useState(false);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [currentThreadId, setCurrentThreadId] = useState(nanoid());
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [threads, setThreads] = useState<ChatThread[]>([
@@ -67,6 +68,7 @@ export default function Home() {
     },
     body: {
       id: currentThreadId,
+      pdfData: pdfData ? Array.from(new Uint8Array(pdfData)) : null,
     },
   });
 
@@ -184,11 +186,15 @@ export default function Home() {
   };
 
   // Handle PDF change
-  const handlePdfChange = (pdfUrl: string | null) => {
-    if (pdfUrl) {
+  const handlePdfChange = (
+    pdfUrl: string | null,
+    pdfData?: ArrayBuffer | null
+  ) => {
+    if (pdfUrl && pdfData) {
       // Reset everything in one go to avoid multiple re-renders
       const newThreadId = nanoid();
       setCurrentThreadId(newThreadId);
+      setPdfData(pdfData);
 
       // Create initial message about the PDF
       const initialMessage: Message = {
@@ -213,6 +219,7 @@ export default function Home() {
       setSurveyCompleted(false); // Reset survey state when new PDF is uploaded
     } else {
       setHasPdf(false);
+      setPdfData(null);
     }
   };
 
