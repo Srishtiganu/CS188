@@ -18,12 +18,26 @@ interface ChatThread {
   createdAt: Date;
 }
 
+// Function to generate system prompt based on survey responses
+const generateSystemPrompt = (familiarity: string, goal: string) => {
+  return `You are an AI assistant that is helping a user understand this research paper better. The user has provided you with the following information regarding their familiarity with the topic of the paper:
+
+How familiar are you with the topic? ${familiarity}
+What is your goal regarding this paper? ${goal}
+
+Use the message history if there is anything relevant there. Format your responses in markdown when applicable.
+
+Answer the user's question to the best of your ability.`;
+};
+
 export default function Home() {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [hasPdf, setHasPdf] = useState(false);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [currentThreadId, setCurrentThreadId] = useState(nanoid());
   const [surveyCompleted, setSurveyCompleted] = useState(false);
+  const [userFamiliarity, setUserFamiliarity] = useState("");
+  const [userGoal, setUserGoal] = useState("");
   const [threads, setThreads] = useState<ChatThread[]>([
     {
       id: currentThreadId,
@@ -32,6 +46,7 @@ export default function Home() {
       createdAt: new Date(),
     },
   ]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   // Initialize useChat hook with message processing
   const {
@@ -69,6 +84,7 @@ export default function Home() {
     body: {
       id: currentThreadId,
       pdfData: pdfData ? Array.from(new Uint8Array(pdfData)) : null,
+      systemPrompt: generateSystemPrompt(userFamiliarity, userGoal),
     },
   });
 
@@ -113,6 +129,41 @@ export default function Home() {
     }
   }, [threads]);
 
+  // Function to fetch suggestions
+  const fetchSuggestions = async (
+    pdfData: ArrayBuffer,
+    messages: Message[] = [],
+    familiarity: string,
+    goal: string
+  ) => {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pdfData: Array.from(new Uint8Array(pdfData)),
+          systemPrompt: `How familiar are you with the topic? ${familiarity}
+What is your goal regarding this paper? ${goal}`,
+          isSuggestionRequest: true,
+          messages: messages, // Include message history for context
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch suggestions");
+      }
+
+      const data = await response.json();
+      if (data.suggestions && data.suggestions.length > 0) {
+        setSuggestions(data.suggestions);
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+    }
+  };
+
   // Handle form submission
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -130,6 +181,15 @@ export default function Home() {
       console.log("Submitting chat with current thread ID:", currentThreadId);
       await handleChatSubmit(e);
       console.log("Chat submitted successfully");
+
+      if (pdfData) {
+        await fetchSuggestions(
+          pdfData,
+          currentMessages,
+          userFamiliarity,
+          userGoal
+        );
+      }
     } catch (error) {
       console.error("Error submitting chat:", error);
     }
@@ -169,20 +229,23 @@ export default function Home() {
     }
   };
 
-  const suggestions = [
-    "Tell me about AI",
-    "How does machine learning work?",
-    "Explain neural networks",
-    "What are LLMs?",
-  ];
-
   // Handle survey submission
-  const handleSurveySubmit = (preferences: {
+  const handleSurveySubmit = async (preferences: {
     familiarity: string;
     goal: string;
   }) => {
     setSurveyCompleted(true);
-    // You could store the preferences in state or localStorage if needed
+    setUserFamiliarity(preferences.familiarity);
+    setUserGoal(preferences.goal);
+    // Fetch suggestions now that preferences are available
+    if (pdfData) {
+      await fetchSuggestions(
+        pdfData,
+        currentMessages,
+        preferences.familiarity,
+        preferences.goal
+      );
+    }
   };
 
   // Handle PDF change
@@ -195,6 +258,8 @@ export default function Home() {
       const newThreadId = nanoid();
       setCurrentThreadId(newThreadId);
       setPdfData(pdfData);
+
+      // Suggestions will be fetched after survey submission when preferences are available
 
       // Create initial message about the PDF
       const initialMessage: Message = {
@@ -220,6 +285,46 @@ export default function Home() {
     } else {
       setHasPdf(false);
       setPdfData(null);
+    }
+  };
+
+  // Handle preferences update
+  const handlePreferencesUpdate = async (preferences: {
+    familiarity: string;
+    goal: string;
+  }) => {
+    // Update local state
+    setUserFamiliarity(preferences.familiarity);
+    setUserGoal(preferences.goal);
+
+    // Create a system update message (non-bubble)
+    const updateMessage: Message = {
+      id: nanoid(),
+      role: "system",
+      content: "User preference updated",
+      createdAt: new Date(),
+    };
+
+    // Add the system update message to the current thread
+    setMessages([...currentMessages, updateMessage]);
+
+    // Notify the AI of the preference change by sending a request
+    try {
+      // Reuse chat submit to include the system update in the next request
+      await handleChatSubmit(
+        new Event("submit") as unknown as React.FormEvent<HTMLFormElement>
+      );
+      // Regenerate suggestions based on updated preferences
+      if (pdfData) {
+        await fetchSuggestions(
+          pdfData,
+          currentMessages,
+          preferences.familiarity,
+          preferences.goal
+        );
+      }
+    } catch (error) {
+      console.error("Error sending preference update to AI:", error);
     }
   };
 
@@ -253,6 +358,7 @@ export default function Home() {
             }))}
             onLoadThread={handleLoadThread}
             currentThreadId={currentThreadId}
+            onPreferencesUpdate={handlePreferencesUpdate}
           />
         ))}
     </main>

@@ -42,6 +42,10 @@ interface ChatSidebarProps {
   onLoadThread: (threadId: string) => void;
   currentThreadId: string;
   onFileUpload?: (file: File) => void;
+  onPreferencesUpdate?: (preferences: {
+    familiarity: string;
+    goal: string;
+  }) => void;
 }
 
 export default function ChatSidebar({
@@ -57,6 +61,7 @@ export default function ChatSidebar({
   onLoadThread,
   currentThreadId,
   onFileUpload,
+  onPreferencesUpdate,
 }: ChatSidebarProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(
@@ -235,9 +240,19 @@ export default function ChatSidebar({
                 <p className="text-center">Start a new conversation</p>
               </div>
             ) : (
-              messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
-              ))
+              messages.map((message) =>
+                // Render a centered system update line for preference changes
+                message.role === "system" ? (
+                  <div
+                    key={message.id}
+                    className="text-center text-sm text-gray-500 my-2"
+                  >
+                    {message.content}
+                  </div>
+                ) : (
+                  <ChatMessage key={message.id} message={message} />
+                )
+              )
             )}
             <div ref={messagesEndRef} />
 
@@ -375,10 +390,6 @@ export default function ChatSidebar({
                         familiarity: e.target.value,
                       };
                       setUserPreferences(newPrefs);
-                      localStorage.setItem(
-                        "userPreferences",
-                        JSON.stringify(newPrefs)
-                      );
                     }}
                   >
                     <option>Not at all</option>
@@ -409,10 +420,6 @@ export default function ChatSidebar({
                             goal: e.target.value,
                           };
                           setUserPreferences(newPrefs);
-                          localStorage.setItem(
-                            "userPreferences",
-                            JSON.stringify(newPrefs)
-                          );
                         }}
                         className="mr-2"
                       />
@@ -426,6 +433,23 @@ export default function ChatSidebar({
                     </div>
                   ))}
                 </div>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => {
+                    localStorage.setItem(
+                      "userPreferences",
+                      JSON.stringify(userPreferences)
+                    );
+                    if (onPreferencesUpdate) {
+                      onPreferencesUpdate(userPreferences);
+                    }
+                    setSettingsOpen(false);
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  Save Changes
+                </Button>
               </div>
             </div>
           </div>
