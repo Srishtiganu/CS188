@@ -38,6 +38,7 @@ export default function Home() {
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [userFamiliarity, setUserFamiliarity] = useState("");
   const [userGoal, setUserGoal] = useState("");
+  const [selectedText, setSelectedText] = useState<string>("");
   const [threads, setThreads] = useState<ChatThread[]>([
     {
       id: currentThreadId,
@@ -85,6 +86,7 @@ export default function Home() {
       id: currentThreadId,
       pdfData: pdfData ? Array.from(new Uint8Array(pdfData)) : null,
       systemPrompt: generateSystemPrompt(userFamiliarity, userGoal),
+      selectedText: selectedText || undefined,
     },
   });
 
@@ -148,6 +150,7 @@ export default function Home() {
 What is your goal regarding this paper? ${goal}`,
           isSuggestionRequest: true,
           messages: messages, // Include message history for context
+          selectedText: selectedText || undefined,
         }),
       });
 
@@ -217,6 +220,7 @@ What is your goal regarding this paper? ${goal}`,
     setCurrentThreadId(newThreadId);
     setHasInteracted(false);
     setMessages([]); // Clear current messages
+    setSelectedText(""); // Clear selected text
   };
 
   // Load a chat thread from history
@@ -226,6 +230,7 @@ What is your goal regarding this paper? ${goal}`,
       setCurrentThreadId(threadId);
       setMessages(thread.messages); // Set messages for the loaded thread
       setHasInteracted(thread.messages.length > 0);
+      setSelectedText(""); // Clear selected text when loading a different thread
     }
   };
 
@@ -258,6 +263,7 @@ What is your goal regarding this paper? ${goal}`,
       const newThreadId = nanoid();
       setCurrentThreadId(newThreadId);
       setPdfData(pdfData);
+      setSelectedText(""); // Clear selected text when changing PDF
 
       // Suggestions will be fetched after survey submission when preferences are available
 
@@ -286,6 +292,33 @@ What is your goal regarding this paper? ${goal}`,
       setHasPdf(false);
       setPdfData(null);
     }
+  };
+
+  // Handle text selection from PDF
+  const handleTextSelection = (text: string) => {
+    console.log("Main Page - Text selection received:", text);
+
+    if (text) {
+      console.log("Main Page - Setting selected text, length:", text.length);
+    } else {
+      console.log("Main Page - Clearing selected text");
+    }
+
+    setSelectedText(text);
+
+    // Refresh suggestions when text is selected
+    if (pdfData && text && surveyCompleted) {
+      console.log(
+        "Main Page - Fetching new suggestions based on selected text"
+      );
+      fetchSuggestions(pdfData, currentMessages, userFamiliarity, userGoal);
+    }
+  };
+
+  // Handle clearing selected text
+  const handleClearSelectedText = () => {
+    console.log("Main Page - Clear selected text button clicked");
+    setSelectedText("");
   };
 
   // Handle preferences update
@@ -332,7 +365,10 @@ What is your goal regarding this paper? ${goal}`,
     <main className="flex min-h-screen">
       {/* Left side - Simple PDF Viewer */}
       <div className="flex-1 bg-white hidden md:block">
-        <SimplePdfViewer onPdfChange={handlePdfChange} />
+        <SimplePdfViewer
+          onPdfChange={handlePdfChange}
+          onTextSelection={handleTextSelection}
+        />
       </div>
 
       {/* Right side - show survey or chat sidebar */}
@@ -359,6 +395,8 @@ What is your goal regarding this paper? ${goal}`,
             onLoadThread={handleLoadThread}
             currentThreadId={currentThreadId}
             onPreferencesUpdate={handlePreferencesUpdate}
+            selectedText={selectedText}
+            onClearSelectedText={handleClearSelectedText}
           />
         ))}
     </main>

@@ -4,20 +4,24 @@ import type React from "react";
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, AlertCircle } from "lucide-react";
+import { Upload, FileText, AlertCircle, Scissors } from "lucide-react";
 
 export default function SimplePdfViewer({
   onPdfChange,
+  onTextSelection,
 }: {
   onPdfChange?: (pdfUrl: string | null, pdfData?: ArrayBuffer | null) => void;
+  onTextSelection?: (selectedText: string) => void;
 }) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [pdfName, setPdfName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedText, setSelectedText] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const objectRef = useRef<HTMLObjectElement>(null);
 
   // Clean up object URLs when component unmounts or when a new PDF is loaded
   useEffect(() => {
@@ -35,6 +39,34 @@ export default function SimplePdfViewer({
       onPdfChange(pdfUrl, pdfData);
     }
   }, [pdfUrl, pdfData]); // onPdfChange is intentionally omitted as it's a prop and would cause unnecessary updates
+
+  // Handle text selection from the PDF
+  useEffect(() => {
+    const handleDocumentSelection = () => {
+      const selection = window.getSelection();
+      if (selection && selection.toString().trim()) {
+        const text = selection.toString().trim();
+        setSelectedText(text);
+
+        console.log("PDF Viewer - Text selected:", text);
+        console.log("PDF Viewer - Selection length:", text.length);
+
+        // Notify parent component of the selected text
+        if (onTextSelection) {
+          onTextSelection(text);
+        }
+      }
+    };
+
+    // Add listeners to capture text selection
+    document.addEventListener("mouseup", handleDocumentSelection);
+    document.addEventListener("touchend", handleDocumentSelection);
+
+    return () => {
+      document.removeEventListener("mouseup", handleDocumentSelection);
+      document.removeEventListener("touchend", handleDocumentSelection);
+    };
+  }, [onTextSelection]);
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -91,6 +123,15 @@ export default function SimplePdfViewer({
     );
   };
 
+  // Handle clearing the selected text
+  const clearSelectedText = () => {
+    console.log("PDF Viewer - Clearing selected text");
+    setSelectedText(null);
+    if (onTextSelection) {
+      onTextSelection("");
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b flex justify-between items-center">
@@ -104,15 +145,28 @@ export default function SimplePdfViewer({
             "PDF Viewer"
           )}
         </h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={triggerFileInput}
-          className="flex items-center gap-1"
-        >
-          <Upload className="h-4 w-4" />
-          {pdfUrl ? "Change PDF" : "Upload PDF"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {selectedText && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearSelectedText}
+              className="flex items-center gap-1"
+            >
+              <Scissors className="h-4 w-4" />
+              Clear Selection
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={triggerFileInput}
+            className="flex items-center gap-1"
+          >
+            <Upload className="h-4 w-4" />
+            {pdfUrl ? "Change PDF" : "Upload PDF"}
+          </Button>
+        </div>
         <input
           type="file"
           ref={fileInputRef}
@@ -150,6 +204,7 @@ export default function SimplePdfViewer({
         pdfUrl && (
           <div className="flex-1 overflow-hidden bg-gray-100">
             <object
+              ref={objectRef}
               data={pdfUrl}
               type="application/pdf"
               className="w-full h-full"

@@ -13,6 +13,7 @@ import {
   CornerDownLeft,
   Settings,
   Paperclip,
+  X,
 } from "lucide-react";
 import ChatMessage from "./chat-message";
 import {
@@ -46,6 +47,8 @@ interface ChatSidebarProps {
     familiarity: string;
     goal: string;
   }) => void;
+  selectedText?: string;
+  onClearSelectedText?: () => void;
 }
 
 export default function ChatSidebar({
@@ -62,6 +65,8 @@ export default function ChatSidebar({
   currentThreadId,
   onFileUpload,
   onPreferencesUpdate,
+  selectedText,
+  onClearSelectedText,
 }: ChatSidebarProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(
@@ -296,6 +301,29 @@ export default function ChatSidebar({
                 ))}
               </div>
             </div>
+
+            {/* Selected text from PDF */}
+            {selectedText && (
+              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md relative">
+                <div className="pr-6">
+                  <p className="text-xs text-blue-500 font-medium mb-1">
+                    Selected from PDF:
+                  </p>
+                  <p className="text-sm">{selectedText}</p>
+                </div>
+                <button
+                  className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    console.log(
+                      "Chat Sidebar - Clear selection button clicked"
+                    );
+                    if (onClearSelectedText) onClearSelectedText();
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
 
             {/* Input form */}
             <form

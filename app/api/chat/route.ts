@@ -15,7 +15,8 @@ const suggestionsSchema = z.object({
 async function generateSuggestions(
   pdfData: number[],
   systemPrompt: string,
-  messages: any[] = []
+  messages: any[] = [],
+  selectedText?: string
 ) {
   console.log(
     "Starting suggestion generation with system prompt:",
@@ -26,6 +27,12 @@ async function generateSuggestions(
   const instruction = `You are an AI assistant that is helping a user understand this research paper better. The user has provided you with the following information regarding their familiarity with the topic of the paper:
 
 ${systemPrompt}
+
+${
+  selectedText
+    ? `The user has selected the following text from the PDF:\n\n${selectedText}\n\n`
+    : ""
+}
 
 Based on the following information and the user's familiarity with the paper and the attached research paper, generate some suggested questions that the user might want to ask. If the user is more of a beginner, ask simpler or broader questions. If the user is more of an expert, ask more technical or detailed questions. The questions should be 4-12 words long and should be outputted in the following JSON format:
 
@@ -81,12 +88,21 @@ IMPORTANT: Use the conversation history provided to generate contextually releva
 
 export async function POST(req: Request) {
   console.log("Received POST request");
-  const { messages, pdfData, systemPrompt, isSuggestionRequest } =
+  const { messages, pdfData, systemPrompt, isSuggestionRequest, selectedText } =
     await req.json();
   console.log(
     "Request type:",
     isSuggestionRequest ? "Suggestion request" : "Chat request"
   );
+
+  if (selectedText) {
+    console.log(
+      "API - Request includes selected text:",
+      selectedText.length > 100
+        ? `${selectedText.substring(0, 100)}... (${selectedText.length} chars)`
+        : selectedText
+    );
+  }
 
   // Handle suggestion generation request
   if (isSuggestionRequest && pdfData) {
@@ -94,12 +110,22 @@ export async function POST(req: Request) {
     const suggestions = await generateSuggestions(
       pdfData,
       systemPrompt,
-      messages
+      messages,
+      selectedText
     );
     console.log("Generated suggestions:", suggestions);
     return new Response(JSON.stringify({ suggestions }), {
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  // Add selected text to system prompt if provided
+  const enhancedSystemPrompt = selectedText
+    ? `${systemPrompt}\n\nThe user has selected the following text from the PDF:\n\n${selectedText}`
+    : systemPrompt;
+
+  if (selectedText) {
+    console.log("API - Enhanced system prompt with selected text");
   }
 
   // Format messages for Gemini
@@ -129,7 +155,7 @@ export async function POST(req: Request) {
 
   // Add system message at the beginning of the conversation
   const fullMessages = [
-    { role: "user", content: systemPrompt },
+    { role: "user", content: enhancedSystemPrompt },
     ...formattedMessages,
   ];
 
