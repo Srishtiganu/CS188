@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useDeferredValue } from "react";
 import type { Message } from "ai";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,9 @@ import {
   Settings,
   Paperclip,
   X,
+  ChevronDown,
+  ChevronUp,
+  FileText,
 } from "lucide-react";
 import ChatMessage from "./chat-message";
 import {
@@ -69,8 +72,48 @@ export default function ChatSidebar({
   onClearSelectedText,
 }: ChatSidebarProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Defer message updates to reduce typing lag
+  const deferredMessages = useDeferredValue(messages);
+  const renderedMessages = useMemo(() => {
+    return deferredMessages.length === 0
+      ? null
+      : deferredMessages
+          .filter((message) => message.content !== "GENERATE_SUMMARY")
+          .map((message) =>
+            message.role === "system" ? (
+              <div
+                key={message.id}
+                className="text-center text-sm text-gray-500 my-2"
+              >
+                {message.content}
+              </div>
+            ) : (
+              <ChatMessage key={message.id} message={message} />
+            )
+          );
+  }, [deferredMessages]);
+  // Selected suggestion state
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(
     null
+  );
+  // Memoize suggestions rendering
+  const renderedSuggestions = useMemo(
+    () =>
+      suggestions.slice(0, 3).map((suggestion) => (
+        <button
+          key={suggestion}
+          className={`text-xs text-gray-600 border border-gray-300 rounded-md px-2.5 py-1 hover:underline hover:bg-gray-50 flex items-center gap-1 transition-colors ${
+            selectedSuggestion === suggestion
+              ? "bg-blue-50 border-blue-200"
+              : ""
+          }`}
+          onClick={() => handleSuggestionClick(suggestion)}
+        >
+          {suggestion}
+          <CornerDownLeft className="h-3 w-3 text-gray-400" />
+        </button>
+      )),
+    [suggestions, selectedSuggestion]
   );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -240,21 +283,7 @@ export default function ChatSidebar({
                 <p className="text-center">Start a new conversation</p>
               </div>
             ) : (
-              messages
-                .filter((message) => message.content !== "GENERATE_SUMMARY")
-                .map((message) =>
-                  // Render a centered system update line for preference changes
-                  message.role === "system" ? (
-                    <div
-                      key={message.id}
-                      className="text-center text-sm text-gray-500 my-2"
-                    >
-                      {message.content}
-                    </div>
-                  ) : (
-                    <ChatMessage key={message.id} message={message} />
-                  )
-                )
+              renderedMessages
             )}
             <div ref={messagesEndRef} />
 
@@ -282,43 +311,35 @@ export default function ChatSidebar({
             {/* Suggestions - only one section, above the input */}
             <div className="mb-3">
               <div className="flex flex-wrap gap-1.5 mb-3">
-                {suggestions.slice(0, 4).map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    className={`text-xs text-gray-600 border border-gray-300 rounded-md px-2.5 py-1 hover:underline hover:bg-gray-50 flex items-center gap-1 transition-colors ${
-                      selectedSuggestion === suggestion
-                        ? "bg-blue-50 border-blue-200"
-                        : ""
-                    }`}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                  >
-                    {suggestion}
-                    <CornerDownLeft className="h-3 w-3 text-gray-400" />
-                  </button>
-                ))}
+                {renderedSuggestions}
               </div>
             </div>
 
             {/* Selected text from PDF */}
             {selectedText && (
-              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md relative">
-                <div className="pr-6">
-                  <p className="text-xs text-blue-500 font-medium mb-1">
-                    Selected from PDF:
-                  </p>
-                  <p className="text-sm">{selectedText}</p>
+              <div className="mb-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-500" />
+                    <p className="text-xs text-blue-600 font-medium">
+                      Selected from PDF
+                    </p>
+                  </div>
+                  <button
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onClearSelectedText) onClearSelectedText();
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                  onClick={() => {
-                    console.log(
-                      "Chat Sidebar - Clear selection button clicked"
-                    );
-                    if (onClearSelectedText) onClearSelectedText();
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                <div className="text-sm text-gray-700">
+                  <span className="font-medium text-gray-600 text-xs">
+                    "{selectedText}"
+                  </span>
+                </div>
               </div>
             )}
 

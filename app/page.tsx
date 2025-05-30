@@ -350,14 +350,6 @@ What is your goal regarding this paper? ${goal}`,
     }
 
     setSelectedText(text);
-
-    // Refresh suggestions when text is selected
-    if (pdfData && text && surveyCompleted) {
-      console.log(
-        "Main Page - Fetching new suggestions based on selected text"
-      );
-      fetchSuggestions(pdfData, currentMessages, userFamiliarity, userGoal);
-    }
   };
 
   // Handle clearing selected text
@@ -407,9 +399,9 @@ What is your goal regarding this paper? ${goal}`,
   };
 
   return (
-    <main className="flex min-h-screen">
+    <main className="flex h-screen overflow-hidden">
       {/* Left side - Simple PDF Viewer */}
-      <div className="flex-1 bg-white hidden md:block">
+      <div className="flex-1 h-full bg-white hidden md:block">
         <SimplePdfViewer
           onPdfChange={handlePdfChange}
           onTextSelection={handleTextSelection}
@@ -419,7 +411,7 @@ What is your goal regarding this paper? ${goal}`,
       {/* Right side - show survey or chat sidebar */}
       {hasPdf &&
         (!surveyCompleted ? (
-          <div className="w-full md:w-1/3 bg-white border-l border-gray-200">
+          <div className="w-full md:w-1/3 bg-white border-l border-gray-200 h-screen overflow-auto">
             <InitialSurvey onSubmit={handleSurveySubmit} />
           </div>
         ) : (

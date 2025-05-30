@@ -2,12 +2,13 @@ import type { Message } from "ai";
 import { User, Bot, FileText } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import type { ComponentPropsWithoutRef } from "react";
+import { memo } from "react";
 
 interface ChatMessageProps {
   message: Message;
 }
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+function ChatMessage({ message }: ChatMessageProps) {
   // Helper function to render message content
   const renderContent = (content: any) => {
     if (typeof content === "string") {
@@ -103,3 +104,5 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     </div>
   );
 }
+
+export default memo(ChatMessage);

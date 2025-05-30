@@ -1,10 +1,29 @@
 "use client";
 
 import type React from "react";
-
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, AlertCircle, Scissors } from "lucide-react";
+import { Upload, FileText, AlertCircle, X, MessageSquare } from "lucide-react";
+
+// React PDF Viewer imports
+import { Viewer, Worker } from "@react-pdf-viewer/core";
+import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
+import { highlightPlugin } from "@react-pdf-viewer/highlight";
+import type {
+  RenderHighlightTargetProps,
+  RenderHighlightContentProps,
+  HighlightArea,
+} from "@react-pdf-viewer/highlight";
+
+// Import styles
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import "@react-pdf-viewer/default-layout/lib/styles/index.css";
+import "@react-pdf-viewer/highlight/lib/styles/index.css";
+
+interface SelectedTextInfo {
+  text: string;
+  highlightAreas: HighlightArea[];
+}
 
 export default function SimplePdfViewer({
   onPdfChange,
@@ -18,10 +37,23 @@ export default function SimplePdfViewer({
   const [pdfName, setPdfName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedText, setSelectedText] = useState<string | null>(null);
+  const [selectedTextInfo, setSelectedTextInfo] =
+    useState<SelectedTextInfo | null>(null);
+  const [showHighlightForm, setShowHighlightForm] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const objectRef = useRef<HTMLObjectElement>(null);
+
+  // Use refs to store latest callback functions to avoid dependency issues
+  const onPdfChangeRef = useRef(onPdfChange);
+  const onTextSelectionRef = useRef(onTextSelection);
+
+  // Update refs when props change
+  useEffect(() => {
+    onPdfChangeRef.current = onPdfChange;
+  }, [onPdfChange]);
+
+  useEffect(() => {
+    onTextSelectionRef.current = onTextSelection;
+  }, [onTextSelection]);
 
   // Clean up object URLs when component unmounts or when a new PDF is loaded
   useEffect(() => {
@@ -34,50 +66,149 @@ export default function SimplePdfViewer({
 
   // Notify parent component when PDF changes
   useEffect(() => {
-    // Only notify if we have an onPdfChange handler
-    if (onPdfChange) {
-      onPdfChange(pdfUrl, pdfData);
+    if (onPdfChangeRef.current) {
+      onPdfChangeRef.current(pdfUrl, pdfData);
     }
-  }, [pdfUrl, pdfData]); // onPdfChange is intentionally omitted as it's a prop and would cause unnecessary updates
+  }, [pdfUrl, pdfData]); // Removed onPdfChange from dependencies to prevent infinite loops
 
-  // Handle text selection from the PDF
-  useEffect(() => {
-    const handleDocumentSelection = (event: MouseEvent | TouchEvent) => {
-      const selection = window.getSelection();
-      if (selection && selection.toString().trim()) {
-        // Check if the selection is within the PDF viewer area
-        const target = event.target as Element;
-        const pdfViewerElement = objectRef.current || iframeRef.current;
+  // Handle text selection callback
+  const handleTextSelection = useCallback(
+    (text: string, highlightAreas: HighlightArea[]) => {
+      console.log("PDF Viewer - Text selected:", text);
+      setSelectedTextInfo({ text, highlightAreas });
 
-        // Only process selection if it's within the PDF viewer or its parent container
-        if (
-          pdfViewerElement &&
-          (pdfViewerElement.contains(target) ||
-            target.closest(".pdf-viewer-container"))
-        ) {
-          const text = selection.toString().trim();
-          setSelectedText(text);
-
-          console.log("PDF Viewer - Text selected:", text);
-          console.log("PDF Viewer - Selection length:", text.length);
-
-          // Notify parent component of the selected text
-          if (onTextSelection) {
-            onTextSelection(text);
-          }
-        }
+      if (onTextSelectionRef.current) {
+        onTextSelectionRef.current(text);
       }
-    };
+    },
+    []
+  ); // Removed onTextSelection from dependencies
 
-    // Add listeners to capture text selection
-    document.addEventListener("mouseup", handleDocumentSelection);
-    document.addEventListener("touchend", handleDocumentSelection);
+  // Clear selected text
+  const clearSelectedText = useCallback(() => {
+    console.log("PDF Viewer - Clearing selected text");
+    setSelectedTextInfo(null);
+    setShowHighlightForm(false);
 
-    return () => {
-      document.removeEventListener("mouseup", handleDocumentSelection);
-      document.removeEventListener("touchend", handleDocumentSelection);
-    };
-  }, [onTextSelection]);
+    if (onTextSelectionRef.current) {
+      onTextSelectionRef.current("");
+    }
+  }, []); // Removed onTextSelection from dependencies
+
+  // Render highlight target (the bubble that appears after text selection)
+  const renderHighlightTarget = (props: RenderHighlightTargetProps) => {
+    // Don't show the button if this text has already been added to chat
+    if (selectedTextInfo && selectedTextInfo.text === props.selectedText) {
+      return <></>;
+    }
+
+    return (
+      <div
+        style={{
+          background: "#3b82f6",
+          color: "white",
+          display: "flex",
+          position: "absolute",
+          left: `${props.selectionRegion.left}%`,
+          top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
+          transform: "translate(0, 8px)",
+          borderRadius: "6px",
+          padding: "8px 12px",
+          fontSize: "14px",
+          fontWeight: "500",
+          cursor: "pointer",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          zIndex: 1000,
+          alignItems: "center",
+          gap: "6px",
+        }}
+        onClick={() => {
+          // Store the selected text and highlight areas
+          handleTextSelection(props.selectedText, props.highlightAreas);
+          // Close the popup immediately without showing the expanded form
+          props.cancel();
+        }}
+      >
+        <MessageSquare size={16} />
+        Add to Chat
+      </div>
+    );
+  };
+
+  // Render highlight content (expanded form)
+  const renderHighlightContent = (props: RenderHighlightContentProps) => (
+    <div
+      style={{
+        background: "white",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
+        padding: "16px",
+        position: "absolute",
+        left: `${props.selectionRegion.left}%`,
+        top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
+        transform: "translate(0, 8px)",
+        minWidth: "300px",
+        maxWidth: "400px",
+        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+        zIndex: 1000,
+      }}
+    >
+      <div className="flex justify-between items-start mb-3">
+        <h4 className="font-medium text-gray-900">Selected Text</h4>
+        <button
+          onClick={() => {
+            setShowHighlightForm(false);
+            props.cancel();
+          }}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      <div className="mb-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
+          <p className="text-sm text-gray-700 line-clamp-4">
+            "{props.selectedText}"
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          onClick={() => {
+            // The text is already stored, just close the form
+            setShowHighlightForm(false);
+            props.cancel();
+          }}
+          className="bg-blue-500 hover:bg-blue-600 text-white"
+        >
+          Added to Chat
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            // Clear selection and close form
+            clearSelectedText();
+            props.cancel();
+          }}
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Create highlight plugin instance
+  const highlightPluginInstance = highlightPlugin({
+    renderHighlightTarget,
+    renderHighlightContent,
+  });
+
+  // Create default layout plugin instance
+  const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -110,9 +241,12 @@ export default function SimplePdfViewer({
         setPdfUrl(fileUrl);
         setPdfName(file.name);
 
+        // Clear any previous selection
+        clearSelectedText();
+
         // Notify parent with both URL and data
-        if (onPdfChange) {
-          onPdfChange(fileUrl, fileData);
+        if (onPdfChangeRef.current) {
+          onPdfChangeRef.current(fileUrl, fileData);
         }
       } catch (error) {
         setError("Failed to read PDF file");
@@ -125,22 +259,6 @@ export default function SimplePdfViewer({
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
-  };
-
-  // Handle iframe load error
-  const handleIframeError = () => {
-    setError(
-      "Failed to load PDF. Please try another file or use a different browser."
-    );
-  };
-
-  // Handle clearing the selected text
-  const clearSelectedText = () => {
-    console.log("PDF Viewer - Clearing selected text");
-    setSelectedText(null);
-    if (onTextSelection) {
-      onTextSelection("");
-    }
   };
 
   return (
@@ -157,17 +275,6 @@ export default function SimplePdfViewer({
           )}
         </h2>
         <div className="flex items-center gap-2">
-          {selectedText && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearSelectedText}
-              className="flex items-center gap-1"
-            >
-              <Scissors className="h-4 w-4" />
-              Clear Selection
-            </Button>
-          )}
           <Button
             variant="outline"
             size="sm"
@@ -213,32 +320,13 @@ export default function SimplePdfViewer({
       ) : (
         !isLoading &&
         pdfUrl && (
-          <div className="flex-1 overflow-hidden bg-gray-100 pdf-viewer-container">
-            <object
-              ref={objectRef}
-              data={pdfUrl}
-              type="application/pdf"
-              className="w-full h-full"
-              aria-label={pdfName || "PDF Document"}
-            >
-              <div className="flex flex-col items-center justify-center h-full p-8">
-                <p className="mb-4 text-center">
-                  Your browser doesn't support embedded PDFs.
-                  <a
-                    href={pdfUrl}
-                    download={pdfName || "document.pdf"}
-                    className="text-blue-500 ml-1"
-                  >
-                    Click here to download the PDF
-                  </a>
-                </p>
-                <Button asChild>
-                  <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                    Open PDF in new tab
-                  </a>
-                </Button>
-              </div>
-            </object>
+          <div className="flex-1 h-full overflow-auto bg-gray-100">
+            <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+              <Viewer
+                fileUrl={pdfUrl}
+                plugins={[highlightPluginInstance, defaultLayoutPluginInstance]}
+              />
+            </Worker>
           </div>
         )
       )}
