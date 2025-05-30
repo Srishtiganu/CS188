@@ -55,6 +55,7 @@ export default function Home() {
     input,
     handleInputChange,
     handleSubmit: handleChatSubmit,
+    append,
     isLoading,
     setMessages,
   } = useChat({
@@ -86,6 +87,8 @@ export default function Home() {
       id: currentThreadId,
       pdfData: pdfData ? Array.from(new Uint8Array(pdfData)) : null,
       systemPrompt: generateSystemPrompt(userFamiliarity, userGoal),
+      familiarity: userFamiliarity,
+      goal: userGoal,
       selectedText: selectedText || undefined,
     },
   });
@@ -242,7 +245,49 @@ What is your goal regarding this paper? ${goal}`,
     setSurveyCompleted(true);
     setUserFamiliarity(preferences.familiarity);
     setUserGoal(preferences.goal);
-    // Fetch suggestions now that preferences are available
+
+    // Generate summary using useChat's append function
+    if (pdfData) {
+      try {
+        console.log("Generating summary for user preferences:", preferences);
+
+        // Use append to trigger summary generation via the chat API
+        await append({
+          role: "user",
+          content: "GENERATE_SUMMARY", // Special message to trigger summary
+        });
+
+        console.log("Summary generation triggered");
+      } catch (error) {
+        console.error("Error generating summary:", error);
+
+        // Add error message manually if append fails
+        const errorMessage: Message = {
+          id: nanoid(),
+          role: "system",
+          content:
+            "Sorry, I couldn't generate a summary at this time. Please try asking me questions about the paper.",
+          createdAt: new Date(),
+        };
+
+        setMessages((prevMessages) => {
+          const newMessages = [...prevMessages, errorMessage];
+
+          // Update the current thread with the new messages
+          setThreads((prevThreads) =>
+            prevThreads.map((thread) =>
+              thread.id === currentThreadId
+                ? { ...thread, messages: newMessages }
+                : thread
+            )
+          );
+
+          return newMessages;
+        });
+      }
+    }
+
+    // Fetch suggestions after summary generation
     if (pdfData) {
       await fetchSuggestions(
         pdfData,
@@ -341,23 +386,23 @@ What is your goal regarding this paper? ${goal}`,
     // Add the system update message to the current thread
     setMessages([...currentMessages, updateMessage]);
 
-    // Notify the AI of the preference change by sending a request
-    try {
-      // Reuse chat submit to include the system update in the next request
-      await handleChatSubmit(
-        new Event("submit") as unknown as React.FormEvent<HTMLFormElement>
+    // Update the current thread with the new message
+    setThreads((prevThreads) =>
+      prevThreads.map((thread) =>
+        thread.id === currentThreadId
+          ? { ...thread, messages: [...currentMessages, updateMessage] }
+          : thread
+      )
+    );
+
+    // Regenerate suggestions based on updated preferences
+    if (pdfData) {
+      await fetchSuggestions(
+        pdfData,
+        currentMessages,
+        preferences.familiarity,
+        preferences.goal
       );
-      // Regenerate suggestions based on updated preferences
-      if (pdfData) {
-        await fetchSuggestions(
-          pdfData,
-          currentMessages,
-          preferences.familiarity,
-          preferences.goal
-        );
-      }
-    } catch (error) {
-      console.error("Error sending preference update to AI:", error);
     }
   };
 

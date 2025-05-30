@@ -1,34 +1,29 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 interface SurveyProps {
-  onSubmit: (preferences: { familiarity: string; goal: string }) => void
+  onSubmit: (preferences: { familiarity: string; goal: string }) => void;
 }
 
 export default function InitialSurvey({ onSubmit }: SurveyProps) {
-  const [familiarity, setFamiliarity] = useState(1) // 0-3 scale
-  const [goal, setGoal] = useState("Just skimming")
+  const [familiarity, setFamiliarity] = useState(0); // 0-1 scale
+  const [goal, setGoal] = useState("Just skimming");
 
-  const familiarityLabels = ["Not at all", "A little", "Somewhat", "Very Familiar"]
-  const goalOptions = [
-    "Just skimming",
-    "Trying to understand key ideas",
-    "Deep dive into mathematical details",
-    "Reading to reproduce results",
-  ]
+  const familiarityLabels = ["Beginner", "Expert"];
+  const goalOptions = ["Just skimming", "Deep dive"];
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     onSubmit({
       familiarity: familiarityLabels[familiarity],
       goal,
-    })
-  }
+    });
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
@@ -38,13 +33,15 @@ export default function InitialSurvey({ onSubmit }: SurveyProps) {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Familiarity Slider */}
           <div className="space-y-4">
-            <label className="text-sm font-medium block">How familiar are you with this topic?</label>
+            <label className="text-sm font-medium block">
+              How familiar are you with this topic?
+            </label>
 
             <div className="pt-4">
               <Slider
                 value={[familiarity]}
                 min={0}
-                max={3}
+                max={1}
                 step={1}
                 onValueChange={(value) => setFamiliarity(value[0])}
                 className="mb-6"
@@ -54,8 +51,10 @@ export default function InitialSurvey({ onSubmit }: SurveyProps) {
                 {familiarityLabels.map((label, index) => (
                   <div
                     key={label}
-                    className={`text-center ${index === familiarity ? "font-bold text-blue-600" : ""}`}
-                    style={{ width: "25%" }}
+                    className={`text-center ${
+                      index === familiarity ? "font-bold text-blue-600" : ""
+                    }`}
+                    style={{ width: "50%" }}
                   >
                     {label}
                   </div>
@@ -66,7 +65,9 @@ export default function InitialSurvey({ onSubmit }: SurveyProps) {
 
           {/* Goal Radio Buttons */}
           <div className="space-y-4">
-            <label className="text-sm font-medium block">What is your goal regarding this paper?</label>
+            <label className="text-sm font-medium block">
+              What is your goal regarding this paper?
+            </label>
 
             <div className="space-y-3 pt-2">
               {goalOptions.map((option) => (
@@ -80,7 +81,10 @@ export default function InitialSurvey({ onSubmit }: SurveyProps) {
                     onChange={(e) => setGoal(e.target.value)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <label htmlFor={option.replace(/\s+/g, "-").toLowerCase()} className="ml-2 block text-sm">
+                  <label
+                    htmlFor={option.replace(/\s+/g, "-").toLowerCase()}
+                    className="ml-2 block text-sm"
+                  >
                     {option}
                   </label>
                 </div>
@@ -95,5 +99,5 @@ export default function InitialSurvey({ onSubmit }: SurveyProps) {
         </form>
       </div>
     </div>
-  )
+  );
 }

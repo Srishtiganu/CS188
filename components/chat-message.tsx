@@ -78,7 +78,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <div
-      className={`flex items-start gap-2 mb-2 ${
+      className={`flex items-start gap-2 mb-2 select-none ${
         message.role === "user" ? "justify-start" : "justify-start"
       }`}
     >
@@ -94,7 +94,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         )}
       </div>
       <div
-        className={`max-w-[80%] p-2 rounded-lg ${
+        className={`max-w-[80%] p-2 rounded-lg select-none ${
           message.role === "user" ? "bg-blue-100" : "bg-gray-100"
         }`}
       >

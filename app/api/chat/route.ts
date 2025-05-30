@@ -11,6 +11,78 @@ const suggestionsSchema = z.object({
   suggestedQuestions: z.array(z.string()),
 });
 
+// Function to generate article summary based on user preferences
+async function generateSummary(
+  pdfData: number[],
+  familiarity: string,
+  goal: string
+) {
+  console.log("Starting summary generation with preferences:", {
+    familiarity,
+    goal,
+  });
+
+  // Customize the summary prompt based on user preferences
+  let summaryStyle = "";
+  if (familiarity === "Beginner") {
+    if (goal === "Just skimming") {
+      summaryStyle =
+        "Provide a very high-level overview with simple explanations. Focus on the main takeaways and avoid technical jargon. Keep it concise and accessible.";
+    } else {
+      // Deep dive
+      summaryStyle =
+        "Provide a detailed but accessible explanation. Break down complex concepts into understandable parts. Include key findings and methodologies, but explain them in simpler terms.";
+    }
+  } else {
+    // Expert
+    if (goal === "Just skimming") {
+      summaryStyle =
+        "Provide a concise technical summary focusing on novel contributions, key results, and methodological approaches. Assume familiarity with domain terminology.";
+    } else {
+      // Deep dive
+      summaryStyle =
+        "Provide a comprehensive technical analysis including methodologies, mathematical formulations, experimental setup, detailed results, and implications. Include technical details and precise terminology.";
+    }
+  }
+
+  const summaryPrompt = `You are an AI assistant helping a user understand a research paper. Based on the user's preferences:
+- Familiarity level: ${familiarity}
+- Reading goal: ${goal}
+
+${summaryStyle}
+
+Please provide a summary of this research paper. Structure your response with clear sections and use markdown formatting. Start with "# Paper Summary" as the heading.`;
+
+  console.log("Summary prompt:", summaryPrompt);
+
+  try {
+    console.log("Generating summary...");
+    const result = await streamText({
+      model: google("gemini-2.0-flash"),
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: summaryPrompt },
+            {
+              type: "file",
+              data: new Uint8Array(pdfData).buffer,
+              mimeType: "application/pdf",
+            },
+          ],
+        },
+      ],
+      temperature: 0.3, // Lower temperature for more consistent summaries
+    });
+
+    console.log("Summary generated successfully");
+    return result;
+  } catch (error) {
+    console.error("Error in generateSummary:", error);
+    throw error;
+  }
+}
+
 // Function to generate suggestions
 async function generateSuggestions(
   pdfData: number[],
@@ -88,11 +160,28 @@ IMPORTANT: Use the conversation history provided to generate contextually releva
 
 export async function POST(req: Request) {
   console.log("Received POST request");
-  const { messages, pdfData, systemPrompt, isSuggestionRequest, selectedText } =
-    await req.json();
+  const {
+    messages,
+    pdfData,
+    systemPrompt,
+    isSuggestionRequest,
+    familiarity,
+    goal,
+    selectedText,
+  } = await req.json();
+
+  // Check if the last message is a summary generation request
+  const lastMessage = messages[messages.length - 1];
+  const isSummaryRequest =
+    lastMessage && lastMessage.content === "GENERATE_SUMMARY";
+
   console.log(
     "Request type:",
-    isSuggestionRequest ? "Suggestion request" : "Chat request"
+    isSuggestionRequest
+      ? "Suggestion request"
+      : isSummaryRequest
+      ? "Summary request"
+      : "Chat request"
   );
 
   if (selectedText) {
@@ -102,6 +191,31 @@ export async function POST(req: Request) {
         ? `${selectedText.substring(0, 100)}... (${selectedText.length} chars)`
         : selectedText
     );
+  }
+
+  // Handle summary generation request
+  if (isSummaryRequest && pdfData && familiarity && goal) {
+    console.log("Processing summary request with PDF data and preferences:", {
+      familiarity,
+      goal,
+    });
+    try {
+      const summaryResult = await generateSummary(pdfData, familiarity, goal);
+      return summaryResult.toDataStreamResponse();
+    } catch (error) {
+      console.error("Error generating summary:", error);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to generate summary",
+        }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
   }
 
   // Handle suggestion generation request
@@ -128,8 +242,13 @@ export async function POST(req: Request) {
     console.log("API - Enhanced system prompt with selected text");
   }
 
+  // Filter out the GENERATE_SUMMARY message for normal chat processing
+  const filteredMessages = messages.filter(
+    (msg: any) => msg.content !== "GENERATE_SUMMARY"
+  );
+
   // Format messages for Gemini
-  const formattedMessages = messages.map((msg: any, index: number) => ({
+  const formattedMessages = filteredMessages.map((msg: any, index: number) => ({
     role: msg.role,
     content:
       // Only include PDF data with the first user message

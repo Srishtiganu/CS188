@@ -78,16 +78,11 @@ export default function ChatSidebar({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [surveyCompleted, setSurveyCompleted] = useState<boolean>(false);
   const [userPreferences, setUserPreferences] = useState({
-    familiarity: "A little",
+    familiarity: "Beginner",
     goal: "Just skimming",
   });
 
-  const goalOptions = [
-    "Just skimming",
-    "Trying to understand key ideas",
-    "Deep dive into mathematical details",
-    "Reading to reproduce results",
-  ];
+  const goalOptions = ["Just skimming", "Deep dive"];
 
   // Check if survey was completed before
   useEffect(() => {
@@ -245,19 +240,21 @@ export default function ChatSidebar({
                 <p className="text-center">Start a new conversation</p>
               </div>
             ) : (
-              messages.map((message) =>
-                // Render a centered system update line for preference changes
-                message.role === "system" ? (
-                  <div
-                    key={message.id}
-                    className="text-center text-sm text-gray-500 my-2"
-                  >
-                    {message.content}
-                  </div>
-                ) : (
-                  <ChatMessage key={message.id} message={message} />
+              messages
+                .filter((message) => message.content !== "GENERATE_SUMMARY")
+                .map((message) =>
+                  // Render a centered system update line for preference changes
+                  message.role === "system" ? (
+                    <div
+                      key={message.id}
+                      className="text-center text-sm text-gray-500 my-2"
+                    >
+                      {message.content}
+                    </div>
+                  ) : (
+                    <ChatMessage key={message.id} message={message} />
+                  )
                 )
-              )
             )}
             <div ref={messagesEndRef} />
 
@@ -420,10 +417,8 @@ export default function ChatSidebar({
                       setUserPreferences(newPrefs);
                     }}
                   >
-                    <option>Not at all</option>
-                    <option>A little</option>
-                    <option>Somewhat</option>
-                    <option>Very Familiar</option>
+                    <option>Beginner</option>
+                    <option>Expert</option>
                   </select>
                 </div>
               </div>

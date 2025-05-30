@@ -42,18 +42,29 @@ export default function SimplePdfViewer({
 
   // Handle text selection from the PDF
   useEffect(() => {
-    const handleDocumentSelection = () => {
+    const handleDocumentSelection = (event: MouseEvent | TouchEvent) => {
       const selection = window.getSelection();
       if (selection && selection.toString().trim()) {
-        const text = selection.toString().trim();
-        setSelectedText(text);
+        // Check if the selection is within the PDF viewer area
+        const target = event.target as Element;
+        const pdfViewerElement = objectRef.current || iframeRef.current;
 
-        console.log("PDF Viewer - Text selected:", text);
-        console.log("PDF Viewer - Selection length:", text.length);
+        // Only process selection if it's within the PDF viewer or its parent container
+        if (
+          pdfViewerElement &&
+          (pdfViewerElement.contains(target) ||
+            target.closest(".pdf-viewer-container"))
+        ) {
+          const text = selection.toString().trim();
+          setSelectedText(text);
 
-        // Notify parent component of the selected text
-        if (onTextSelection) {
-          onTextSelection(text);
+          console.log("PDF Viewer - Text selected:", text);
+          console.log("PDF Viewer - Selection length:", text.length);
+
+          // Notify parent component of the selected text
+          if (onTextSelection) {
+            onTextSelection(text);
+          }
         }
       }
     };
@@ -202,7 +213,7 @@ export default function SimplePdfViewer({
       ) : (
         !isLoading &&
         pdfUrl && (
-          <div className="flex-1 overflow-hidden bg-gray-100">
+          <div className="flex-1 overflow-hidden bg-gray-100 pdf-viewer-container">
             <object
               ref={objectRef}
               data={pdfUrl}
