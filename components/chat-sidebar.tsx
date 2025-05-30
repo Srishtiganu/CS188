@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
+  Download,
 } from "lucide-react";
 import ChatMessage from "./chat-message";
 import {
@@ -215,6 +216,61 @@ export default function ChatSidebar({
     localStorage.setItem("userPreferences", JSON.stringify(preferences));
   };
 
+  // Export chat as markdown
+  const exportChatAsMarkdown = () => {
+    if (messages.length === 0) return;
+
+    const now = new Date();
+    const timestamp = now.toLocaleString();
+    const currentThread = chatHistory.find(
+      (chat) => chat.id === currentThreadId
+    );
+
+    let markdown = `# Chat Export\n\n`;
+    markdown += `**Date:** ${timestamp}\n`;
+    if (currentThread) {
+      markdown += `**Thread:** ${currentThread.title}\n`;
+    }
+    markdown += `**User Preferences:** ${userPreferences.familiarity}, ${userPreferences.goal}\n\n`;
+    markdown += `---\n\n`;
+
+    // Convert messages to markdown
+    const filteredMessages = messages.filter(
+      (msg) => msg.content !== "GENERATE_SUMMARY"
+    );
+
+    filteredMessages.forEach((message, index) => {
+      if (message.role === "system") {
+        markdown += `*System: ${message.content}*\n\n`;
+      } else if (message.role === "user") {
+        markdown += `**User:** ${message.content}\n\n`;
+      } else if (message.role === "assistant") {
+        markdown += `**Assistant:** ${message.content}\n\n`;
+      }
+    });
+
+    markdown += `---\n\n`;
+    markdown += `*Exported from Chat Assistant*\n`;
+
+    // Create and download the file
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+
+    const filename = `chat-export-${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${String(
+      now.getHours()
+    ).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}.md`;
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // Add file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -236,6 +292,18 @@ export default function ChatSidebar({
       <div className="p-3 border-b flex justify-between items-center">
         <h2 className="text-lg font-semibold">Chat</h2>
         <div className="flex gap-2">
+          {surveyCompleted && messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={exportChatAsMarkdown}
+              className="h-8 w-8"
+              title="Export Chat"
+            >
+              <Download className="h-4 w-4" />
+              <span className="sr-only">Export Chat</span>
+            </Button>
+          )}
           {surveyCompleted && (
             <Button
               variant="ghost"
