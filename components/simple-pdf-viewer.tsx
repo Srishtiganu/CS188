@@ -29,14 +29,16 @@ export default function SimplePdfViewer({
   onPdfChange,
   onTextSelection,
   pdfData: propPdfData,
+  pdfName: propPdfName,
 }: {
   onPdfChange?: (pdfUrl: string | null, pdfData?: ArrayBuffer | null) => void;
   onTextSelection?: (selectedText: string) => void;
   pdfData?: ArrayBuffer;
+  pdfName?: string | null;
 }) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
-  const [pdfName, setPdfName] = useState<string | null>(null);
+  const [pdfName, setPdfName] = useState<string | null>(propPdfName || null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedTextInfo, setSelectedTextInfo] =
@@ -276,8 +278,7 @@ export default function SimplePdfViewer({
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b flex justify-between items-center">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <FileText className="h-5 w-5" />
+        <h2 className="text-lg font-normal flex items-center gap-2">
           {pdfName ? (
             <span className="truncate max-w-[200px]" title={pdfName}>
               {pdfName}
@@ -334,10 +335,7 @@ export default function SimplePdfViewer({
         pdfUrl && (
           <div className="flex-1 h-full overflow-auto bg-gray-100">
             <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-              <Viewer
-                fileUrl={pdfUrl}
-                plugins={[highlightPluginInstance, defaultLayoutPluginInstance]}
-              />
+              <Viewer fileUrl={pdfUrl} plugins={[highlightPluginInstance]} />
             </Worker>
           </div>
         )

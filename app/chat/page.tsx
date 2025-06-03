@@ -48,6 +48,7 @@ export default function Home() {
     },
   ]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [pdfName, setPdfName] = useState<string | null>(null);
 
   // Initialize useChat hook with message processing
   const {
@@ -401,6 +402,7 @@ What is your goal regarding this paper? ${goal}`,
   // On mount, check localStorage for uploaded PDF
   useEffect(() => {
     const base64 = localStorage.getItem("uploadedPdf");
+    const pdfName = localStorage.getItem("uploadedPdfName");
     if (base64) {
       // Convert base64 to ArrayBuffer
       const binaryString = atob(base64);
@@ -411,6 +413,10 @@ What is your goal regarding this paper? ${goal}`,
       }
       setPdfData(bytes.buffer);
       setHasPdf(true);
+      // Set the PDF name if available
+      if (pdfName) {
+        setPdfName(pdfName);
+      }
       // Optionally clear after loading
       // localStorage.removeItem("uploadedPdf");
     }
@@ -425,6 +431,7 @@ What is your goal regarding this paper? ${goal}`,
             onPdfChange={() => {}}
             onTextSelection={setSelectedText}
             pdfData={pdfData}
+            pdfName={pdfName}
           />
         )}
       </div>
