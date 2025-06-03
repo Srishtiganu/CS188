@@ -27,21 +27,64 @@ async function generateSummary(
   if (familiarity === "Beginner") {
     if (goal === "Just skimming") {
       summaryStyle =
-        "Provide a very high-level overview with simple explanations. Focus on the main takeaways and avoid technical jargon. Keep it concise and accessible.";
+        `You are helping a beginner get a general sense of what a research paper is about.
+
+Write a simple, friendly summary that explains:
+- What the paper is trying to do and why it matters?
+- A gentle explanation of the main idea or approach (very high level)
+- Key findings and their significance
+
+Assume the reader has a basic background in linear algebra and computer science. Avoid math and jargon. Use understandable language. 
+If you introduce a technical term that is essential to understanding the paper, define it clearly using metaphors or analogies.
+The goal is to help someone decide if they want to learn more about the paper, not to explain every detail.`;
     } else {
       // Deep dive
       summaryStyle =
-        "Provide a detailed but accessible explanation. Break down complex concepts into understandable parts. Include key findings and methodologies, but explain them in simpler terms.";
+        `You are helping a beginner understand a research paper in depth.
+
+Write an accessible summary that explains:
+- The problem being solved
+- Important concepts or terms, in the order they appear, with clear, intuitive explanations before any formal definitions or equations
+- The main approach, broken into understandable steps with plain-English explanations for all symbols, equations, and mechanisms
+- Key results and their significance
+
+Assume the reader has a basic background in linear algebra and computer science, but is unfamiliar with the specific topic of the paper.
+
+Avoid introducing equations or notation (e.g. Q,K,V,W,x,a) until the underlying idea is fully explained in plain language.
+If equations are included, explain every variable and symbol clearly immediately afterward, and relate it back to the intuition.
+Limit the summary to under 3500 characters. Do not provide a section by section summary.`;
     }
   } else {
     // Expert
     if (goal === "Just skimming") {
       summaryStyle =
-        "Provide a concise technical summary focusing on novel contributions, key results, and methodological approaches. Assume familiarity with domain terminology.";
+        `You are an AI assistant helping a researcher quickly audit a paper to decide whether it's worth reading in depth.
+
+Summarize the paper. Focus on:
+- Main contributions and novelty
+- Briefly define key terms or methods in 1 sentence if central to the paper.
+- High-level methodology 
+- Relevance to ongoing research
+- Limitations and red flags(if any)
+
+Avoid section-by-section summaries. If there is a defining equation for the core methodology, include it inline using LaTeX with a brief explanation, but no more than one equation. 
+Define key technical terms if they are essential to understanding the paper. Introduce them in logical order, as they appear in the summary.
+Limit the summary to under 2000 characters. Assume the user is an expert and only needs a high-level scan to triage. `;
+
     } else {
       // Deep dive
       summaryStyle =
-        "Provide a comprehensive technical analysis including methodologies, mathematical formulations, experimental setup, detailed results, and implications. Include technical details and precise terminology.";
+        `You are an AI assistant helping a researcher deeply understand and possibly reimplement a paper's method.
+
+Summarize the paper with a focus on:
+- Core problem and motivation
+- Assumptions and theoretical framing
+- Core methodology and architecture
+- Experimental setup and evaluation metrics
+- Key results and their implications
+- Potential limitations or caveats
+
+Use precise terminology and equations where relevant. Limit the summary to under 4000 characters. Avoid section by section summary`;
     }
   }
 
@@ -51,7 +94,9 @@ async function generateSummary(
 
 ${summaryStyle}
 
-Please provide a summary of this research paper. Structure your response with clear sections and use markdown formatting. Start with "# Paper Summary" as the heading.`;
+Please provide a summary of this research paper. Structure your response with clear sections and use Markdown formatting. Start with "# Paper Summary" as the heading.
+When referencing equations or formulas, format them using LaTeX syntax wrapped in $...$ for inline math or $$...$$ for block math. When typesetting in math mode, wrap function names (e.g., MultiHead, Attention, softmax) and descriptive words (e.g., Concat, head, dropout) in \text{} to ensure correct rendering. Use \mathbb{R} and subscript notation for vector and matrix shapes. Do not treat function names as variable names.
+`;
 
   console.log("Summary prompt:", summaryPrompt);
 
@@ -106,7 +151,55 @@ ${
     : ""
 }
 
-Based on the following information and the user's familiarity with the paper and the attached research paper, generate some suggested questions that the user might want to ask. If the user is more of a beginner, ask simpler or broader questions. If the user is more of an expert, ask more technical or detailed questions. The questions should be 4-12 words long and should be outputted in the following JSON format:
+Important:
+- The selected text may be either a mathematical expression or a general text snippet (such as a sentence, paragraph, or caption).
+- Please first infer the type of the selected text.
+- If it appears to be a mathematical expression, your first step is to locate and identify the exact corresponding equation from the full paper. Use the surrounding context to match the selected expression to the most accurate and complete version of the equation. Do not proceed to generate questions until you've correctly identified the original expression.
+- Adapt your questions appropriately:
+  - If it's a math expression, focus on its mathematical meaning, related methods, and its role in the paper.
+  -If it's a general text, focus on clarifying its meaning, connecting it to broader context, and understanding its role in the argument.
+- Ensure the questions are specific, diverse, and do not overlap across categories.
+- Customize to the user's background and reading goal.
+- Use the conversation history provided to generate contextually relevant questions. Pay special attention to the most recent message for generating suggestions.
+- All mathematical expressions in your output must be formatted in LaTeX.
+
+
+Based on the provided paper context, selected expression, user profile, and conversation history, generate 1 thoughtful and diverse suggested questions for each of the following categories:
+
+
+1. Local (clarifying the immediate meaning of the selected expression)
+- For math: suggest questions that focus only on clarifying the internal meaning, notation, terms of the selected expression.
+- For text: clarify difficult vocabulary, sentence meaning, or  phrasing
+- Avoid questions about its broader context or narrative role.
+
+Examples:
+- What does the notation P(y|x) stand for, mathematically?
+What does the author mean by "state-of-the-art" in this sentence?
+- What is the purpose of the log() function in this equation?
+
+
+2. Global (connecting selected expression to broader field knowledge or research trends)
+- For math: Suggest questions that help the user relate this expression to other works, known methods, or field-wide practices.
+ - For text: connect the sentence or claim to broader debates, methods, or common narratives in the field.
+
+Examples:
+- Is this a commonly used formulation/method in deep learning?
+- Is this type of loss function standard in classification tasks?
+- Is this claim about robustness widely accepted in machine learning?
+
+3. Narrative (understanding the role of selected expression in the argument of the paper)
+ - For math: Suggest questions that help the user understand how the expression fits into the paper’s narrative or logical flow. Stay specific to this expression.
+- For text: Suggest how the selected sentence supports the argument, relates to prior claims, or transitions
+ - Encourage linking to previous expressions or discussions where appropriate.
+
+Examples:
+
+- Is this expression part of a model, an assumption, a result, or an optimization goal?
+ - Does this equation introduce any assumptions that impact the paper’s conclusions?
+- How does this sentence connect to the author’s findings from the previous paragraph?
+
+
+The questions should be 4-20 words long and should be outputted in the following JSON format:
 
 {
    "suggestedQuestions": ["question1", "question2", ...]
@@ -115,9 +208,7 @@ Based on the following information and the user's familiarity with the paper and
 Example:
 {
    "suggestedQuestions": ["What are LLMs?", "Explain Neural Networks", "What does the variable X represent?", "What does the symbol ∑ mean?"]
-}
-
-IMPORTANT: Use the conversation history provided to generate contextually relevant questions. Pay special attention to the most recent message for generating suggestions.`;
+}`;
 
   console.log("Instruction:", instruction);
 

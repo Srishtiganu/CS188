@@ -1,6 +1,10 @@
 import type { Message } from "ai";
 import { User, Bot, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex"; //to support latex rendering
+import 'katex/dist/katex.min.css';
+
 import type { ComponentPropsWithoutRef } from "react";
 import { memo, useState } from "react";
 
@@ -28,6 +32,8 @@ function ChatMessage({ message }: ChatMessageProps) {
       return (
         <div>
           <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
             components={{
               p: ({ children }) => (
                 <p className="mb-1.5 last:mb-0 text-sm">{children}</p>
