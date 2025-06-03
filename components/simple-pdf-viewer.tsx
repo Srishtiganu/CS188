@@ -28,9 +28,11 @@ interface SelectedTextInfo {
 export default function SimplePdfViewer({
   onPdfChange,
   onTextSelection,
+  pdfData: propPdfData,
 }: {
   onPdfChange?: (pdfUrl: string | null, pdfData?: ArrayBuffer | null) => void;
   onTextSelection?: (selectedText: string) => void;
+  pdfData?: ArrayBuffer;
 }) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
@@ -209,6 +211,16 @@ export default function SimplePdfViewer({
 
   // Create default layout plugin instance
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
+
+  // If propPdfData is provided, use it and skip upload UI
+  useEffect(() => {
+    if (propPdfData) {
+      setPdfData(propPdfData);
+      const blob = new Blob([propPdfData], { type: "application/pdf" });
+      const fileUrl = URL.createObjectURL(blob);
+      setPdfUrl(fileUrl);
+    }
+  }, [propPdfData]);
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
