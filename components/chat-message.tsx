@@ -3,7 +3,7 @@ import { User, Bot, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex"; //to support latex rendering
-import 'katex/dist/katex.min.css';
+import "katex/dist/katex.min.css";
 
 import type { ComponentPropsWithoutRef } from "react";
 import { memo, useState } from "react";

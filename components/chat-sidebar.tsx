@@ -5,6 +5,7 @@ import type React from "react";
 import { useState, useRef, useEffect, useMemo, useDeferredValue } from "react";
 import type { Message } from "ai";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Send,
   AlertCircle,
@@ -18,6 +19,7 @@ import {
   ChevronUp,
   FileText,
   Download,
+  ArrowUp,
 } from "lucide-react";
 import ChatMessage from "./chat-message";
 import {
@@ -414,30 +416,47 @@ export default function ChatSidebar({
             {/* Input form */}
             <form
               onSubmit={handleFormSubmitWithErrorHandling}
-              className="flex items-end gap-2"
+              className="border border-gray-200 rounded-lg overflow-hidden"
             >
-              <div className="flex-1 relative">
-                <textarea
+              <div className="relative border-b border-gray-200">
+                <Textarea
                   ref={textareaRef}
                   value={input}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask me anything..."
-                  className="w-full border rounded-md p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[60px]"
-                  rows={2}
+                  className="border-0 resize-none min-h-[60px] focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  rows={3}
                 />
-                <div className="absolute bottom-2 right-2">
-                  <Button
-                    type="submit"
-                    size="icon"
-                    className="h-8 w-8 bg-blue-500 hover:bg-blue-600"
-                    disabled={isLoading || !input.trim()}
-                  >
-                    <Send className="h-4 w-4" />
-                    <span className="sr-only">Send message</span>
-                  </Button>
-                </div>
               </div>
+              <div className="bg-gray-100 px-2 py-1 flex justify-end items-center gap-2 h-9">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleFileClick}
+                  className="text-gray-600 text-sm hover:text-gray-800 bg-white border-gray-100 h-7 rounded-md border"
+                >
+                  <Paperclip className="h-4 w-4 mr-1" />
+                  Upload Files
+                </Button>
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="h-7 w-7 bg-orange-500 hover:bg-orange-600 text-white"
+                  disabled={isLoading || !input.trim()}
+                >
+                  <ArrowUp className="h-5 w-5" />
+                  <span className="sr-only">Send message</span>
+                </Button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileChange}
+                className="hidden"
+                accept=".pdf,.txt,.doc,.docx"
+              />
             </form>
             {error && (
               <div className="mt-2 text-red-500 text-sm flex items-center gap-1">
