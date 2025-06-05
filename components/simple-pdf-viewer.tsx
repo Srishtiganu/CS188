@@ -109,7 +109,7 @@ export default function SimplePdfViewer({
     return (
       <div
         style={{
-          background: "#3b82f6",
+          background: "#F6BB3BFF",
           color: "white",
           display: "flex",
           position: "absolute",
@@ -277,17 +277,17 @@ export default function SimplePdfViewer({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b flex justify-between items-center">
-        <h2 className="text-lg font-normal flex items-center gap-2">
+      <div className="p-3 border-b flex justify-between items-center">
+        <h2 className="text-lg font-normal flex items-center">
           {pdfName ? (
-            <span className="truncate max-w-[200px]" title={pdfName}>
+            <span className="max-w-[200px]" title={pdfName}>
               {pdfName}
             </span>
           ) : (
             "PDF Viewer"
           )}
         </h2>
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -297,14 +297,14 @@ export default function SimplePdfViewer({
             <Upload className="h-4 w-4" />
             {pdfUrl ? "Change PDF" : "Upload PDF"}
           </Button>
-        </div>
-        <input
+        </div> */}
+        {/* <input
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
           accept="application/pdf"
           className="hidden"
-        />
+        /> */}
       </div>
 
       {error && (
@@ -335,7 +335,10 @@ export default function SimplePdfViewer({
         pdfUrl && (
           <div className="flex-1 h-full overflow-auto bg-gray-100">
             <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-              <Viewer fileUrl={pdfUrl} plugins={[highlightPluginInstance]} />
+              <Viewer
+                fileUrl={pdfUrl}
+                plugins={[highlightPluginInstance, defaultLayoutPluginInstance]}
+              />
             </Worker>
           </div>
         )

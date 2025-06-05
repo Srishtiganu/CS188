@@ -123,23 +123,12 @@ function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={`flex items-start gap-2 mb-2 select-none ${
-        message.role === "user" ? "justify-start" : "justify-start"
+        message.role === "user" ? "justify-end" : "justify-start"
       }`}
     >
       <div
-        className={`flex items-center justify-center h-6 w-6 rounded-full ${
-          message.role === "user" ? "bg-blue-100" : "bg-gray-100"
-        }`}
-      >
-        {message.role === "user" ? (
-          <User className="h-3 w-3 text-blue-600" />
-        ) : (
-          <Bot className="h-3 w-3 text-gray-600" />
-        )}
-      </div>
-      <div
         className={`max-w-[80%] p-2 rounded-lg select-none ${
-          message.role === "user" ? "bg-blue-100" : "bg-gray-100"
+          message.role === "user" ? "bg-orange-100" : "bg-gray-100"
         }`}
       >
         {renderContent(message.content)}

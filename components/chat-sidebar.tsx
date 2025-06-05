@@ -11,15 +11,14 @@ import {
   AlertCircle,
   History,
   Plus,
-  CornerDownLeft,
   Settings,
-  Paperclip,
   X,
   ChevronDown,
   ChevronUp,
   FileText,
   Download,
   ArrowUp,
+  Lightbulb,
 } from "lucide-react";
 import ChatMessage from "./chat-message";
 import {
@@ -48,7 +47,6 @@ interface ChatSidebarProps {
   chatHistory: ChatHistoryItem[];
   onLoadThread: (threadId: string) => void;
   currentThreadId: string;
-  onFileUpload?: (file: File) => void;
   onPreferencesUpdate?: (preferences: {
     familiarity: string;
     goal: string;
@@ -69,7 +67,6 @@ export default function ChatSidebar({
   chatHistory,
   onLoadThread,
   currentThreadId,
-  onFileUpload,
   onPreferencesUpdate,
   selectedText,
   onClearSelectedText,
@@ -105,15 +102,15 @@ export default function ChatSidebar({
       suggestions.slice(0, 3).map((suggestion) => (
         <button
           key={suggestion}
-          className={`text-xs text-gray-600 border border-gray-300 rounded-md px-2.5 py-1 hover:underline hover:bg-gray-50 flex items-center gap-1 transition-colors ${
+          className={`text-xs text-gray-600 border border-gray-300 rounded-md px-2.5 py-1 hover:underline hover:bg-gray-50 flex items-center gap-1 transition-colors text-left ${
             selectedSuggestion === suggestion
-              ? "bg-blue-50 border-blue-200"
+              ? "bg-blue-50 border-orange-200"
               : ""
           }`}
           onClick={() => handleSuggestionClick(suggestion)}
         >
-          {suggestion}
-          <CornerDownLeft className="h-3 w-3 text-gray-400" />
+          <Lightbulb className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+          <span className="text-left">{suggestion}</span>
         </button>
       )),
     [suggestions, selectedSuggestion]
@@ -273,26 +270,11 @@ export default function ChatSidebar({
     URL.revokeObjectURL(url);
   };
 
-  // Add file input ref
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Add file handling functions
-  const handleFileClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && onFileUpload) {
-      onFileUpload(file);
-    }
-  };
-
   return (
     <div className="w-full md:w-1/3 bg-white border-l border-gray-200 flex flex-col h-screen">
       {/* Header with buttons */}
-      <div className="p-3 border-b flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Chat</h2>
+      <div className="p-2 flex justify-between items-center bg-transparent">
+        <h2 className="text-lg font-normal">Chat</h2>
         <div className="flex gap-2">
           {surveyCompleted && messages.length > 0 && (
             <Button
@@ -416,47 +398,26 @@ export default function ChatSidebar({
             {/* Input form */}
             <form
               onSubmit={handleFormSubmitWithErrorHandling}
-              className="border border-gray-200 rounded-lg overflow-hidden"
+              className="border border-gray-200 rounded-lg relative"
             >
-              <div className="relative border-b border-gray-200">
-                <Textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything..."
-                  className="border-0 resize-none min-h-[60px] focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                  rows={3}
-                />
-              </div>
-              <div className="bg-gray-100 px-2 py-1 flex justify-end items-center gap-2 h-9">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleFileClick}
-                  className="text-gray-600 text-sm hover:text-gray-800 bg-white border-gray-100 h-7 rounded-md border"
-                >
-                  <Paperclip className="h-4 w-4 mr-1" />
-                  Upload Files
-                </Button>
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="h-7 w-7 bg-orange-500 hover:bg-orange-600 text-white"
-                  disabled={isLoading || !input.trim()}
-                >
-                  <ArrowUp className="h-5 w-5" />
-                  <span className="sr-only">Send message</span>
-                </Button>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".pdf,.txt,.doc,.docx"
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask me anything..."
+                className="border-0 resize-none min-h-[60px] focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 pr-12"
+                rows={3}
               />
+              <Button
+                type="submit"
+                size="icon"
+                className="absolute bottom-2 right-2 h-7 w-7 bg-orange-500 hover:bg-orange-600 text-white"
+                disabled={isLoading || !input.trim()}
+              >
+                <ArrowUp className="h-5 w-5" />
+                <span className="sr-only">Send message</span>
+              </Button>
             </form>
             {error && (
               <div className="mt-2 text-red-500 text-sm flex items-center gap-1">

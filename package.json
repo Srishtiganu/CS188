@@ -63,7 +63,7 @@
     "react-katex": "^3.1.0",
     "react-markdown": "latest",
     "react-pdf": "latest",
-    "react-resizable-panels": "^2.1.7",
+    "react-resizable-panels": "^2.1.9",
     "recharts": "2.15.0",
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
