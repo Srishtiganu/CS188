@@ -26,8 +26,7 @@ async function generateSummary(
   let summaryStyle = "";
   if (familiarity === "Beginner") {
     if (goal === "Just skimming") {
-      summaryStyle =
-        `You are helping a beginner get a general sense of what a research paper is about.
+      summaryStyle = `You are helping a beginner get a general sense of what a research paper is about.
 
 Write a simple, friendly summary that explains:
 - What the paper is trying to do and why it matters?
@@ -39,8 +38,7 @@ If you introduce a technical term that is essential to understanding the paper, 
 The goal is to help someone decide if they want to learn more about the paper, not to explain every detail.`;
     } else {
       // Deep dive
-      summaryStyle =
-        `You are helping a beginner understand a research paper in depth.
+      summaryStyle = `You are helping a beginner understand a research paper in depth.
 
 Write an accessible summary that explains:
 - The problem being solved
@@ -57,8 +55,7 @@ Limit the summary to under 3500 characters. Do not provide a section by section 
   } else {
     // Expert
     if (goal === "Just skimming") {
-      summaryStyle =
-        `You are an AI assistant helping a researcher quickly audit a paper to decide whether it's worth reading in depth.
+      summaryStyle = `You are an AI assistant helping a researcher quickly audit a paper to decide whether it's worth reading in depth.
 
 Summarize the paper. Focus on:
 - Main contributions and novelty
@@ -70,11 +67,9 @@ Summarize the paper. Focus on:
 Avoid section-by-section summaries. If there is a defining equation for the core methodology, include it inline using LaTeX with a brief explanation, but no more than one equation. 
 Define key technical terms if they are essential to understanding the paper. Introduce them in logical order, as they appear in the summary.
 Limit the summary to under 2000 characters. Assume the user is an expert and only needs a high-level scan to triage. `;
-
     } else {
       // Deep dive
-      summaryStyle =
-        `You are an AI assistant helping a researcher deeply understand and possibly reimplement a paper's method.
+      summaryStyle = `You are an AI assistant helping a researcher deeply understand and possibly reimplement a paper's method.
 
 Summarize the paper with a focus on:
 - Core problem and motivation
@@ -164,10 +159,10 @@ Important:
 - All mathematical expressions in your output must be formatted in LaTeX.
 
 
-Based on the provided paper context, selected expression, user profile, and conversation history, generate 1 thoughtful and diverse suggested questions for each of the following categories:
+Based on the provided paper context, selected expression, user profile, and conversation history, generate 6-7 thoughtful and diverse suggested questions. Distribute them across the following categories:
 
 
-1. Local (clarifying the immediate meaning of the selected expression)
+1. Local (clarifying the immediate meaning of the selected expression) - Generate 2-3 questions
 - For math: suggest questions that focus only on clarifying the internal meaning, notation, terms of the selected expression.
 - For text: clarify difficult vocabulary, sentence meaning, or  phrasing
 - Avoid questions about its broader context or narrative role.
@@ -178,7 +173,7 @@ What does the author mean by "state-of-the-art" in this sentence?
 - What is the purpose of the log() function in this equation?
 
 
-2. Global (connecting selected expression to broader field knowledge or research trends)
+2. Global (connecting selected expression to broader field knowledge or research trends) - Generate 2-3 questions
 - For math: Suggest questions that help the user relate this expression to other works, known methods, or field-wide practices.
  - For text: connect the sentence or claim to broader debates, methods, or common narratives in the field.
 
@@ -187,7 +182,7 @@ Examples:
 - Is this type of loss function standard in classification tasks?
 - Is this claim about robustness widely accepted in machine learning?
 
-3. Narrative (understanding the role of selected expression in the argument of the paper)
+3. Narrative (understanding the role of selected expression in the argument of the paper) - Generate 2 questions
  - For math: Suggest questions that help the user understand how the expression fits into the paper’s narrative or logical flow. Stay specific to this expression.
 - For text: Suggest how the selected sentence supports the argument, relates to prior claims, or transitions
  - Encourage linking to previous expressions or discussions where appropriate.

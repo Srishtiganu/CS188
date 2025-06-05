@@ -96,25 +96,30 @@ export default function ChatSidebar({
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(
     null
   );
+  // Show more suggestions state
+  const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
+
   // Memoize suggestions rendering
-  const renderedSuggestions = useMemo(
-    () =>
-      suggestions.slice(0, 3).map((suggestion) => (
-        <button
-          key={suggestion}
-          className={`text-xs text-gray-600 border border-gray-300 rounded-md px-2.5 py-1 hover:underline hover:bg-gray-50 flex items-center gap-1 transition-colors text-left ${
-            selectedSuggestion === suggestion
-              ? "bg-blue-50 border-orange-200"
-              : ""
-          }`}
-          onClick={() => handleSuggestionClick(suggestion)}
-        >
-          <Lightbulb className="h-3 w-3 text-yellow-500 flex-shrink-0" />
-          <span className="text-left">{suggestion}</span>
-        </button>
-      )),
-    [suggestions, selectedSuggestion]
-  );
+  const renderedSuggestions = useMemo(() => {
+    const suggestionsToShow = showMoreSuggestions
+      ? suggestions.slice(0, 7)
+      : suggestions.slice(0, 3);
+
+    return suggestionsToShow.map((suggestion) => (
+      <button
+        key={suggestion}
+        className={`text-xs text-gray-600 border border-gray-300 rounded-md px-2.5 py-1 hover:underline hover:bg-gray-50 flex items-center gap-1 transition-colors text-left ${
+          selectedSuggestion === suggestion
+            ? "bg-blue-50 border-orange-200"
+            : ""
+        }`}
+        onClick={() => handleSuggestionClick(suggestion)}
+      >
+        <Lightbulb className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+        <span className="text-left">{suggestion}</span>
+      </button>
+    ));
+  }, [suggestions, selectedSuggestion, showMoreSuggestions]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -361,11 +366,36 @@ export default function ChatSidebar({
           {/* Input area with suggestions above - always at bottom */}
           <div className="p-4 border-t">
             {/* Suggestions - only one section, above the input */}
-            <div className="mb-3">
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {renderedSuggestions}
+            {suggestions.length > 0 && (
+              <div className="mb-3">
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {renderedSuggestions}
+                </div>
+                {suggestions.length > 3 && (
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() =>
+                        setShowMoreSuggestions(!showMoreSuggestions)
+                      }
+                      className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+                    >
+                      {showMoreSuggestions ? (
+                        <>
+                          <ChevronUp className="h-3 w-3" />
+                          Show less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-3 w-3" />
+                          Show more suggestions (
+                          {Math.min(suggestions.length, 7) - 3} more)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Selected text from PDF */}
             {selectedText && (
