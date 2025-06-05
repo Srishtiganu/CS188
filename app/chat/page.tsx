@@ -42,12 +42,13 @@ export default function Home() {
   const [threads, setThreads] = useState<ChatThread[]>([
     {
       id: currentThreadId,
-      name: "New Chat",
+      name: "Untitled",
       messages: [],
       createdAt: new Date(),
     },
   ]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState<boolean>(false);
   const [pdfName, setPdfName] = useState<string | null>(null);
 
   // Initialize useChat hook with message processing
@@ -68,20 +69,13 @@ export default function Home() {
       }
     },
     onFinish: () => {
-      console.log("Chat response finished. Current messages:", currentMessages);
-      // Update threads with the new messages
+      // Update current thread with the new messages (title already set)
       setThreads((prevThreads) =>
-        prevThreads.map((thread) => {
-          if (thread.id === currentThreadId) {
-            return {
-              ...thread,
-              messages: currentMessages,
-              name:
-                thread.messages.length === 0 ? input.slice(0, 30) : thread.name,
-            };
-          }
-          return thread;
-        })
+        prevThreads.map((thread) =>
+          thread.id === currentThreadId
+            ? { ...thread, messages: currentMessages }
+            : thread
+        )
       );
     },
     body: {
@@ -142,6 +136,8 @@ export default function Home() {
     familiarity: string,
     goal: string
   ) => {
+    setSuggestionsLoading(true);
+    setSuggestions([]); // Clear existing suggestions
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -168,6 +164,8 @@ What is your goal regarding this paper? ${goal}`,
       }
     } catch (error) {
       console.error("Error fetching suggestions:", error);
+    } finally {
+      setSuggestionsLoading(false);
     }
   };
 
@@ -247,44 +245,53 @@ What is your goal regarding this paper? ${goal}`,
     setUserFamiliarity(preferences.familiarity);
     setUserGoal(preferences.goal);
 
-    // Generate summary using useChat's append function
     if (pdfData) {
+      // 1) Generate title once
       try {
-        console.log("Generating summary for user preferences:", preferences);
+        console.log("Generating title for paper...");
+        // Temporary thread name while generating
+        setThreads((prev) =>
+          prev.map((thread) =>
+            thread.id === currentThreadId
+              ? { ...thread, name: "Thinking of title..." }
+              : thread
+          )
+        );
 
-        // Use append to trigger summary generation via the chat API
-        await append({
-          role: "user",
-          content: "GENERATE_SUMMARY", // Special message to trigger summary
+        const titleResponse = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pdfData: Array.from(new Uint8Array(pdfData)),
+            familiarity: preferences.familiarity,
+            goal: preferences.goal,
+            isTitleRequest: true,
+          }),
         });
 
-        console.log("Summary generation triggered");
-      } catch (error) {
-        console.error("Error generating summary:", error);
-
-        // Add error message manually if append fails
-        const errorMessage: Message = {
-          id: nanoid(),
-          role: "system",
-          content:
-            "Sorry, I couldn't generate a summary at this time. Please try asking me questions about the paper.",
-          createdAt: new Date(),
-        };
-
-        setMessages((prevMessages) => {
-          const newMessages = [...prevMessages, errorMessage];
-
-          // Update the current thread with the new messages
-          setThreads((prevThreads) =>
-            prevThreads.map((thread) =>
+        if (titleResponse.ok) {
+          const { title } = await titleResponse.json();
+          console.log("Received title:", title);
+          setThreads((prev) =>
+            prev.map((thread) =>
               thread.id === currentThreadId
-                ? { ...thread, messages: newMessages }
+                ? { ...thread, name: title }
                 : thread
             )
           );
+        } else {
+          console.error("Title request failed:", titleResponse.statusText);
+        }
+      } catch (err) {
+        console.error("Error generating title:", err);
+      }
 
-          return newMessages;
-        });
+      // 2) Trigger summary streaming
+      try {
+        console.log("Triggering summary streaming...");
+        await append({ role: "user", content: "GENERATE_SUMMARY" });
+      } catch (err) {
+        console.error("Error triggering summary streaming:", err);
       }
     }
 
@@ -325,7 +332,7 @@ What is your goal regarding this paper? ${goal}`,
       setThreads([
         {
           id: newThreadId,
-          name: "New Chat",
+          name: "Untitled",
           messages: [initialMessage],
           createdAt: new Date(),
         },
@@ -449,6 +456,7 @@ What is your goal regarding this paper? ${goal}`,
             handleInputChange={handleInputChange}
             handleSubmit={handleFormSubmit}
             suggestions={suggestions}
+            suggestionsLoading={suggestionsLoading}
             isLoading={isLoading}
             hasInteracted={hasInteracted}
             onNewChat={handleNewChat}
@@ -459,6 +467,7 @@ What is your goal regarding this paper? ${goal}`,
             }))}
             onLoadThread={handleLoadThread}
             currentThreadId={currentThreadId}
+            currentThreadName={currentThread?.name}
             onPreferencesUpdate={handlePreferencesUpdate}
             selectedText={selectedText}
             onClearSelectedText={handleClearSelectedText}

@@ -47,7 +47,7 @@ export default function Home() {
         <h1
           className={`text-7xl font-normal text-white/70 ${specialGothicExpanded.className}`}
         >
-          Interdisipviz
+          PaperClip
         </h1>
 
         {/* Upload Button */}
@@ -59,7 +59,7 @@ export default function Home() {
           className="hidden"
         />
         <Button
-          className={`bg-white/10 hover:bg-white/20 border border-white/30 rounded-2xl text-white/70 hover:text-orange-50 backdrop-blur-2xl font-thin px-[168px] py-4 text-lg`}
+          className={`bg-white/10 hover:bg-white/20 border border-white/30 rounded-2xl text-white/70 hover:text-orange-50 backdrop-blur-2xl font-thin px-[115px] py-4 text-lg`}
           size="lg"
           onClick={handleButtonClick}
         >

@@ -11,13 +11,52 @@ const suggestionsSchema = z.object({
   suggestedQuestions: z.array(z.string()),
 });
 
-// Function to generate article summary based on user preferences
-async function generateSummary(
+// Schema for title only
+const titleSchema = z.object({
+  title: z
+    .string()
+    .describe(
+      "A concise 2-4 word title that captures the main topic/contribution of the research paper"
+    ),
+});
+
+// Function to generate a concise title
+async function generateTitle(
   pdfData: number[],
   familiarity: string,
   goal: string
 ) {
-  console.log("Starting summary generation with preferences:", {
+  const titlePrompt = `You are an AI assistant that reads a research paper and produces a concise 2-4 word title that captures its main topic or contribution.`;
+  const result = await generateObject({
+    model: google("gemini-2.0-flash"),
+    schema: titleSchema,
+    schemaName: "title",
+    schemaDescription: "A concise title of the research paper",
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: titlePrompt },
+          {
+            type: "file",
+            data: new Uint8Array(pdfData).buffer,
+            mimeType: "application/pdf",
+          },
+        ],
+      },
+    ],
+    temperature: 0.3,
+  });
+  return result.object.title;
+}
+
+// Function to generate streaming summary with title based on user preferences
+async function generateStreamingSummary(
+  pdfData: number[],
+  familiarity: string,
+  goal: string
+) {
+  console.log("Starting streaming summary generation with preferences:", {
     familiarity,
     goal,
   });
@@ -89,14 +128,15 @@ Use precise terminology and equations where relevant. Limit the summary to under
 
 ${summaryStyle}
 
-Please provide a summary of this research paper. Structure your response with clear sections and use Markdown formatting. Start with "# Paper Summary" as the heading.
+Please provide a comprehensive summary of this research paper. Structure your response with clear sections and use Markdown formatting. Start with "# Paper Summary" as the heading.
+
 When referencing equations or formulas, format them using LaTeX syntax wrapped in $...$ for inline math or $$...$$ for block math. When typesetting in math mode, wrap function names (e.g., MultiHead, Attention, softmax) and descriptive words (e.g., Concat, head, dropout) in \text{} to ensure correct rendering. Use \mathbb{R} and subscript notation for vector and matrix shapes. Do not treat function names as variable names.
 `;
 
-  console.log("Summary prompt:", summaryPrompt);
+  console.log("Streaming summary prompt:", summaryPrompt);
 
   try {
-    console.log("Generating summary...");
+    console.log("Generating streaming summary...");
     const result = await streamText({
       model: google("gemini-2.0-flash"),
       messages: [
@@ -115,10 +155,10 @@ When referencing equations or formulas, format them using LaTeX syntax wrapped i
       temperature: 0.3, // Lower temperature for more consistent summaries
     });
 
-    console.log("Summary generated successfully");
+    console.log("Streaming summary generated successfully");
     return result;
   } catch (error) {
-    console.error("Error in generateSummary:", error);
+    console.error("Error in generateStreamingSummary:", error);
     throw error;
   }
 }
@@ -183,15 +223,15 @@ Examples:
 - Is this claim about robustness widely accepted in machine learning?
 
 3. Narrative (understanding the role of selected expression in the argument of the paper) - Generate 2 questions
- - For math: Suggest questions that help the user understand how the expression fits into the paper’s narrative or logical flow. Stay specific to this expression.
+ - For math: Suggest questions that help the user understand how the expression fits into the paper's narrative or logical flow. Stay specific to this expression.
 - For text: Suggest how the selected sentence supports the argument, relates to prior claims, or transitions
  - Encourage linking to previous expressions or discussions where appropriate.
 
 Examples:
 
 - Is this expression part of a model, an assumption, a result, or an optimization goal?
- - Does this equation introduce any assumptions that impact the paper’s conclusions?
-- How does this sentence connect to the author’s findings from the previous paragraph?
+ - Does this equation introduce any assumptions that impact the paper's conclusions?
+- How does this sentence connect to the author's findings from the previous paragraph?
 
 
 The questions should be 4-20 words long and should be outputted in the following JSON format:
@@ -251,42 +291,43 @@ export async function POST(req: Request) {
     pdfData,
     systemPrompt,
     isSuggestionRequest,
+    isTitleRequest,
     familiarity,
     goal,
     selectedText,
   } = await req.json();
 
-  // Check if the last message is a summary generation request
-  const lastMessage = messages[messages.length - 1];
-  const isSummaryRequest =
-    lastMessage && lastMessage.content === "GENERATE_SUMMARY";
-
-  console.log(
-    "Request type:",
-    isSuggestionRequest
-      ? "Suggestion request"
-      : isSummaryRequest
-      ? "Summary request"
-      : "Chat request"
-  );
-
-  if (selectedText) {
-    console.log(
-      "API - Request includes selected text:",
-      selectedText.length > 100
-        ? `${selectedText.substring(0, 100)}... (${selectedText.length} chars)`
-        : selectedText
-    );
+  // Handle title generation request
+  if (isTitleRequest && pdfData && familiarity && goal) {
+    try {
+      const title = await generateTitle(pdfData, familiarity, goal);
+      return new Response(JSON.stringify({ title }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      console.error("Error generating title:", error);
+      return new Response(
+        JSON.stringify({ error: "Failed to generate title" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
   }
 
   // Handle summary generation request
+  const lastMessage = messages[messages.length - 1];
+  const isSummaryRequest =
+    lastMessage && lastMessage.content === "GENERATE_SUMMARY";
   if (isSummaryRequest && pdfData && familiarity && goal) {
     console.log("Processing summary request with PDF data and preferences:", {
       familiarity,
       goal,
     });
     try {
-      const summaryResult = await generateSummary(pdfData, familiarity, goal);
+      const summaryResult = await generateStreamingSummary(
+        pdfData,
+        familiarity,
+        goal
+      );
       return summaryResult.toDataStreamResponse();
     } catch (error) {
       console.error("Error generating summary:", error);

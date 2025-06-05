@@ -141,14 +141,14 @@ export default function SimplePdfViewer({
     return (
       <div
         style={{
-          background: "#f97316",
+          background: "#fb923c", // Lighter orange
           color: "white",
           display: "flex",
           position: "absolute",
           left: `${props.selectionRegion.left}%`,
           top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
           transform: "translate(0, 8px)",
-          borderRadius: "6px",
+          borderRadius: "12px", // Less rounded
           padding: "8px 12px",
           fontSize: "14px",
           fontWeight: "500",
@@ -449,12 +449,6 @@ export default function SimplePdfViewer({
           )}
         </h2>
         <div className="flex items-center gap-2">
-          {/* Chat options or other controls can go here */}
-          {selectedTextInfo && (
-            <div className="text-sm text-blue-600 font-medium">
-              Text selected for chat
-            </div>
-          )}
           <Button
             variant="outline"
             size="sm"

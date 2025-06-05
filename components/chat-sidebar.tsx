@@ -19,6 +19,7 @@ import {
   Download,
   ArrowUp,
   Lightbulb,
+  FileIcon,
 } from "lucide-react";
 import ChatMessage from "./chat-message";
 import {
@@ -28,6 +29,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import InitialSurvey from "./initial-survey";
+import { TextLoop } from "@/components/ui/text-loop";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 
 interface ChatHistoryItem {
   id: string;
@@ -41,12 +44,14 @@ interface ChatSidebarProps {
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   suggestions: string[];
+  suggestionsLoading?: boolean;
   isLoading: boolean;
   hasInteracted: boolean;
   onNewChat: () => void;
   chatHistory: ChatHistoryItem[];
   onLoadThread: (threadId: string) => void;
   currentThreadId: string;
+  currentThreadName?: string;
   onPreferencesUpdate?: (preferences: {
     familiarity: string;
     goal: string;
@@ -61,12 +66,14 @@ export default function ChatSidebar({
   handleInputChange,
   handleSubmit,
   suggestions,
+  suggestionsLoading = false,
   isLoading,
   hasInteracted,
   onNewChat,
   chatHistory,
   onLoadThread,
   currentThreadId,
+  currentThreadName,
   onPreferencesUpdate,
   selectedText,
   onClearSelectedText,
@@ -110,7 +117,7 @@ export default function ChatSidebar({
         key={suggestion}
         className={`text-xs text-gray-600 border border-gray-300 rounded-md px-2.5 py-1 hover:underline hover:bg-gray-50 flex items-center gap-1 transition-colors text-left ${
           selectedSuggestion === suggestion
-            ? "bg-blue-50 border-orange-200"
+            ? "bg-orange-50 border-orange-200"
             : ""
         }`}
         onClick={() => handleSuggestionClick(suggestion)}
@@ -282,14 +289,14 @@ export default function ChatSidebar({
     >
       {/* Header with buttons */}
       <div className="p-2 flex justify-between items-center bg-transparent">
-        <h2 className="text-lg font-normal">Chat</h2>
+        <h2 className="text-lg font-normal">{currentThreadName || "Chat"}</h2>
         <div className="flex gap-2">
           {surveyCompleted && messages.length > 0 && (
             <Button
-              variant="ghost"
-              size="icon"
+              variant="outline"
+              size="sm"
               onClick={exportChatAsMarkdown}
-              className="h-8 w-8"
+              className="h-8 px-3"
               title="Export Chat"
             >
               <Download className="h-4 w-4" />
@@ -298,10 +305,10 @@ export default function ChatSidebar({
           )}
           {surveyCompleted && (
             <Button
-              variant="ghost"
-              size="icon"
+              variant="outline"
+              size="sm"
               onClick={() => setSettingsOpen(true)}
-              className="h-8 w-8"
+              className="h-8 px-3"
               title="Adjust Difficulty"
             >
               <Settings className="h-4 w-4" />
@@ -309,20 +316,20 @@ export default function ChatSidebar({
             </Button>
           )}
           <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
+            size="sm"
             onClick={() => setHistoryOpen(true)}
-            className="h-8 w-8"
+            className="h-8 px-3"
             title="History"
           >
             <History className="h-4 w-4" />
             <span className="sr-only">History</span>
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
+            size="sm"
             onClick={onNewChat}
-            className="h-8 w-8"
+            className="h-8 px-3"
             title="New Chat"
           >
             <Plus className="h-4 w-4" />
@@ -349,27 +356,66 @@ export default function ChatSidebar({
 
             {isLoading &&
               messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex items-center space-x-2 mt-2">
-                  <div
-                    className="bg-gray-200 rounded-full h-2 w-2 animate-bounce"
-                    style={{ animationDelay: "0ms" }}
-                  ></div>
-                  <div
-                    className="bg-gray-200 rounded-full h-2 w-2 animate-bounce"
-                    style={{ animationDelay: "150ms" }}
-                  ></div>
-                  <div
-                    className="bg-gray-200 rounded-full h-2 w-2 animate-bounce"
-                    style={{ animationDelay: "300ms" }}
-                  ></div>
+                <div className="mt-4">
+                  {/* Check if we're generating a summary */}
+                  {messages.some(
+                    (msg) =>
+                      msg.role === "user" && msg.content === "GENERATE_SUMMARY"
+                  ) ? (
+                    <div className="mb-5 flex flex-col items-start">
+                      {/* Bot name label */}
+                      <div className="text-sm text-gray-400 mb-1 font-medium ml-9">
+                        PaperClip
+                      </div>
+                      {/* AI message layout matching regular messages */}
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0"></div>
+                        <div className="p-0 max-w-[95%]">
+                          <TextShimmer
+                            className="text-sm ![--base-color:rgba(107,114,128,1)] ![--base-gradient-color:rgba(156,163,175,1)]"
+                            spread={1}
+                            duration={2}
+                          >
+                            PaperClip is thinking...
+                          </TextShimmer>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 mt-2">
+                      <div
+                        className="bg-gray-200 rounded-full h-2 w-2 animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      ></div>
+                      <div
+                        className="bg-gray-200 rounded-full h-2 w-2 animate-bounce"
+                        style={{ animationDelay: "150ms" }}
+                      ></div>
+                      <div
+                        className="bg-gray-200 rounded-full h-2 w-2 animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      ></div>
+                    </div>
+                  )}
                 </div>
               )}
           </div>
 
           {/* Input area with suggestions above - always at bottom */}
-          <div className="p-4 border-t">
+          <div className="p-4">
             {/* Suggestions - only one section, above the input */}
-            {suggestions.length > 0 && (
+            {suggestionsLoading ? (
+              <div className="mb-3">
+                <div className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-3">
+                  <TextLoop
+                    analyses={["Generating suggestions..."]}
+                    className="text-center"
+                    textColor="rgb(194, 65, 12)" // orange-700 for better contrast
+                    textSize="0.875rem" // text-sm equivalent
+                  />
+                </div>
+              </div>
+            ) : suggestions.length > 0 ? (
               <div className="mb-3">
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {renderedSuggestions}
@@ -390,23 +436,22 @@ export default function ChatSidebar({
                       ) : (
                         <>
                           <ChevronDown className="h-3 w-3" />
-                          Show more suggestions (
-                          {Math.min(suggestions.length, 7) - 3} more)
+                          Show more suggestions
                         </>
                       )}
                     </button>
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
 
             {/* Selected text from PDF */}
             {selectedText && (
-              <div className="mb-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
+              <div className="mb-3 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-blue-500" />
-                    <p className="text-xs text-blue-600 font-medium">
+                    <FileIcon className="h-4 w-4 text-orange-500" />
+                    <p className="text-xs text-orange-600 font-medium">
                       Selected from PDF
                     </p>
                   </div>
@@ -479,7 +524,7 @@ export default function ChatSidebar({
                   <li
                     key={chat.id}
                     className={`py-3 hover:bg-gray-50 cursor-pointer px-2 rounded ${
-                      chat.id === currentThreadId ? "bg-blue-50" : ""
+                      chat.id === currentThreadId ? "bg-orange-50" : ""
                     }`}
                     onClick={() => handleThreadSelect(chat.id)}
                   >
@@ -571,7 +616,7 @@ export default function ChatSidebar({
                     }
                     setSettingsOpen(false);
                   }}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
                 >
                   Save Changes
                 </Button>

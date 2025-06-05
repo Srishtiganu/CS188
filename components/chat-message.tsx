@@ -122,17 +122,33 @@ function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <div
-      className={`flex items-start gap-2 mb-2 select-none ${
-        message.role === "user" ? "justify-end" : "justify-start"
+      className={`mb-5 select-none ${
+        message.role === "user"
+          ? "flex justify-end"
+          : "flex flex-col items-start"
       }`}
     >
-      <div
-        className={`max-w-[80%] p-2 rounded-lg select-none ${
-          message.role === "user" ? "bg-orange-100" : "bg-gray-100"
-        }`}
-      >
-        {renderContent(message.content)}
-      </div>
+      {/* Bot name label - above everything for non-user messages */}
+      {message.role !== "user" && (
+        <div className="text-sm text-gray-400 mb-1 font-medium ml-9">
+          PaperClip
+        </div>
+      )}
+
+      {message.role === "user" ? (
+        /* User message - simple right-aligned layout */
+        <div className="bg-orange-100 p-3 rounded-xl max-w-[80%] select-none">
+          {renderContent(message.content)}
+        </div>
+      ) : (
+        /* AI message - complex layout with profile picture */
+        <div className="flex items-start gap-3">
+          <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0"></div>
+          <div className="p-0 max-w-[95%] select-none">
+            {renderContent(message.content)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
