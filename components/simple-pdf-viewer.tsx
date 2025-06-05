@@ -438,10 +438,7 @@ export default function SimplePdfViewer({
         <h2 className="text-lg font-normal flex items-center gap-2">
           {/* <FileIcon className="w-5 h-5" /> */}
           {pdfName ? (
-            <span
-              className="max-w-[200px] truncate font-semibold"
-              title={pdfName}
-            >
+            <span className="max-w-[400px] font-semibold" title={pdfName}>
               {pdfName.replace(/\.pdf$/i, "")}
             </span>
           ) : (
