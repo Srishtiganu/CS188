@@ -9,6 +9,7 @@ import SimplePdfViewer from "@/components/simple-pdf-viewer";
 import InitialSurvey from "@/components/initial-survey";
 import type { Message } from "ai";
 import { useChat } from "ai/react";
+import { useRouter } from "next/navigation";
 
 // Define a chat thread type
 interface ChatThread {
@@ -31,6 +32,7 @@ Answer the user's question to the best of your ability.`;
 };
 
 export default function Home() {
+  const router = useRouter();
   const [hasInteracted, setHasInteracted] = useState(false);
   const [hasPdf, setHasPdf] = useState(false);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
@@ -428,6 +430,14 @@ What is your goal regarding this paper? ${goal}`,
       // localStorage.removeItem("uploadedPdf");
     }
   }, []);
+
+  // Redirect to home if no PDF is loaded
+  useEffect(() => {
+    const base64 = localStorage.getItem("uploadedPdf");
+    if (!base64) {
+      router.push("/");
+    }
+  }, [router]);
 
   return (
     <main className="flex h-screen overflow-hidden">

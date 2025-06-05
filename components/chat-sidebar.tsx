@@ -137,6 +137,12 @@ export default function ChatSidebar({
     goal: "Just skimming",
   });
 
+  // Local state for the settings dialog to prevent immediate updates
+  const [dialogPreferences, setDialogPreferences] = useState({
+    familiarity: "Beginner",
+    goal: "Just skimming",
+  });
+
   const goalOptions = ["Just skimming", "Deep dive"];
 
   // Check if survey was completed before
@@ -146,10 +152,19 @@ export default function ChatSidebar({
       setSurveyCompleted(true);
       const savedPreferences = localStorage.getItem("userPreferences");
       if (savedPreferences) {
-        setUserPreferences(JSON.parse(savedPreferences));
+        const prefs = JSON.parse(savedPreferences);
+        setUserPreferences(prefs);
+        setDialogPreferences(prefs);
       }
     }
   }, []);
+
+  // Sync dialog preferences when settings dialog opens
+  useEffect(() => {
+    if (settingsOpen) {
+      setDialogPreferences(userPreferences);
+    }
+  }, [settingsOpen, userPreferences]);
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -555,13 +570,13 @@ export default function ChatSidebar({
                 <div className="mt-2">
                   <select
                     className="w-full border rounded-md p-2"
-                    value={userPreferences.familiarity}
+                    value={dialogPreferences.familiarity}
                     onChange={(e) => {
                       const newPrefs = {
-                        ...userPreferences,
+                        ...dialogPreferences,
                         familiarity: e.target.value,
                       };
-                      setUserPreferences(newPrefs);
+                      setDialogPreferences(newPrefs);
                     }}
                   >
                     <option>Beginner</option>
@@ -583,13 +598,13 @@ export default function ChatSidebar({
                           .toLowerCase()}`}
                         name="settings-goal"
                         value={option}
-                        checked={userPreferences.goal === option}
+                        checked={dialogPreferences.goal === option}
                         onChange={(e) => {
                           const newPrefs = {
-                            ...userPreferences,
+                            ...dialogPreferences,
                             goal: e.target.value,
                           };
-                          setUserPreferences(newPrefs);
+                          setDialogPreferences(newPrefs);
                         }}
                         className="mr-2"
                       />
@@ -607,12 +622,13 @@ export default function ChatSidebar({
               <div className="flex justify-end">
                 <Button
                   onClick={() => {
+                    setUserPreferences(dialogPreferences);
                     localStorage.setItem(
                       "userPreferences",
-                      JSON.stringify(userPreferences)
+                      JSON.stringify(dialogPreferences)
                     );
                     if (onPreferencesUpdate) {
-                      onPreferencesUpdate(userPreferences);
+                      onPreferencesUpdate(dialogPreferences);
                     }
                     setSettingsOpen(false);
                   }}
