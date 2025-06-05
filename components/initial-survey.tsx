@@ -26,7 +26,10 @@ export default function InitialSurvey({ onSubmit }: SurveyProps) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div
+      className="flex-1 overflow-y-auto p-6 h-full min-h-screen"
+      style={{ backgroundColor: "#FBFBFB" }}
+    >
       <div className="max-w-md mx-auto">
         <h2 className="text-2xl font-semibold mb-6">Before we start</h2>
 
@@ -43,10 +46,10 @@ export default function InitialSurvey({ onSubmit }: SurveyProps) {
                   key={label}
                   type="button"
                   onClick={() => setFamiliarity(index)}
-                  className={`flex-1 bg-gradient-to-br from-orange-500/20 to-orange-400/10 text-orange-400/80 backdrop-blur-2xl font-thin px-6 py-4 text-lg flex flex-col items-center justify-center gap-2 rounded-2xl ${
+                  className={`flex-1 bg-white text-gray-700 font-thin px-6 py-4 text-lg flex flex-col items-center justify-center gap-2 rounded-2xl transition-all duration-200 ${
                     index === familiarity
-                      ? "bg-gradient-to-br from-orange-600/60 to-orange-500/45 !text-white border border-orange-400/30"
-                      : ""
+                      ? "border-4 border-orange-500 text-orange-600 shadow-lg"
+                      : "border-4 border-gray-100 hover:border-gray-200"
                   }`}
                 >
                   <span className="text-4xl">{index === 0 ? "🤔" : "🎓"}</span>
@@ -71,10 +74,10 @@ export default function InitialSurvey({ onSubmit }: SurveyProps) {
                   key={option}
                   type="button"
                   onClick={() => setGoal(option)}
-                  className={`flex-1 bg-gradient-to-br from-orange-500/20 to-orange-400/10 text-orange-400/80 backdrop-blur-2xl font-thin px-6 py-4 text-lg flex flex-col items-center justify-center gap-2 rounded-2xl ${
+                  className={`flex-1 bg-white text-gray-700 font-thin px-6 py-4 text-lg flex flex-col items-center justify-center gap-2 rounded-2xl transition-all duration-200 ${
                     goal === option
-                      ? "bg-gradient-to-br from-orange-600/60 to-orange-500/45 !text-white border border-orange-400/30"
-                      : ""
+                      ? "border-4 border-orange-500 text-orange-600 shadow-lg"
+                      : "border-4 border-gray-100 hover:border-gray-200"
                   }`}
                 >
                   <span className="text-4xl">
@@ -90,7 +93,7 @@ export default function InitialSurvey({ onSubmit }: SurveyProps) {
           <div className="pt-4">
             <Button
               type="submit"
-              className="w-full bg-gradient-to-br text-white from-orange-400/40 to-orange-300/30 border border-orange-400/30 backdrop-blur-2xl font-thin px-8 py-6 text-xl rounded-2xl"
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-thin px-8 py-6 text-xl rounded-2xl transition-colors duration-200"
             >
               Submit
             </Button>

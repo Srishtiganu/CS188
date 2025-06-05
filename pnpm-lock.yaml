@@ -104,7 +104,16 @@ importers:
       '@react-pdf-viewer/highlight':
         specifier: ^3.12.0
         version: 3.12.0(pdfjs-dist@3.4.120)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@react-pdf-viewer/page-navigation':
+        specifier: ^3.12.0
+        version: 3.12.0(pdfjs-dist@3.4.120)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@react-pdf-viewer/selection-mode':
+        specifier: ^3.12.0
+        version: 3.12.0(pdfjs-dist@3.4.120)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@react-pdf-viewer/thumbnail':
+        specifier: ^3.12.0
+        version: 3.12.0(pdfjs-dist@3.4.120)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@react-pdf-viewer/zoom':
         specifier: ^3.12.0
         version: 3.12.0(pdfjs-dist@3.4.120)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       ai:

@@ -276,7 +276,10 @@ export default function ChatSidebar({
   };
 
   return (
-    <div className="w-full md:w-1/3 bg-white border-l border-gray-200 flex flex-col h-screen">
+    <div
+      className="w-full md:w-1/3 border-l border-gray-200 flex flex-col h-screen"
+      style={{ backgroundColor: "#FBFBFB" }}
+    >
       {/* Header with buttons */}
       <div className="p-2 flex justify-between items-center bg-transparent">
         <h2 className="text-lg font-normal">Chat</h2>
