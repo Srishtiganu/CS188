@@ -130,7 +130,7 @@ ${summaryStyle}
 
 Please provide a comprehensive summary of this research paper. Structure your response with clear sections and use Markdown formatting. Start with "# Paper Summary" as the heading.
 
-When referencing equations or formulas, format them using LaTeX syntax wrapped in $...$ for inline math or $$...$$ for block math. When typesetting in math mode, wrap function names (e.g., MultiHead, Attention, softmax) and descriptive words (e.g., Concat, head, dropout) in \text{} to ensure correct rendering. Use \mathbb{R} and subscript notation for vector and matrix shapes. Do not treat function names as variable names.
+When referencing equations or formulas, format them using LaTeX syntax wrapped in $...$ for inline math or $$...$$ for block math. When typesetting in math mode, wrap function names (e.g., MultiHead, Attention, softmax) and descriptive words (e.g., Concat, head, dropout) in \\text{} to ensure correct rendering. Use \\mathbb{R} and subscript notation for vector and matrix shapes. Do not treat function names as variable names.
 `;
 
   console.log("Streaming summary prompt:", summaryPrompt);
@@ -199,10 +199,10 @@ Important:
 - All mathematical expressions in your output must be formatted in LaTeX.
 
 
-Based on the provided paper context, selected expression, user profile, and conversation history, generate 6-7 thoughtful and diverse suggested questions. Distribute them across the following categories:
+Based on the provided paper context, selected expression, user profile, and conversation history, generate 6 thoughtful and diverse suggested questions. Distribute them across the following categories:
 
 
-1. Local (clarifying the immediate meaning of the selected expression) - Generate 2-3 questions
+1. Local (clarifying the immediate meaning of the selected expression) - Generate 2 questions
 - For math: suggest questions that focus only on clarifying the internal meaning, notation, terms of the selected expression.
 - For text: clarify difficult vocabulary, sentence meaning, or  phrasing
 - Avoid questions about its broader context or narrative role.
@@ -225,12 +225,12 @@ Examples:
 3. Narrative (understanding the role of selected expression in the argument of the paper) - Generate 2 questions
  - For math: Suggest questions that help the user understand how the expression fits into the paper's narrative or logical flow. Stay specific to this expression.
 - For text: Suggest how the selected sentence supports the argument, relates to prior claims, or transitions
- - Encourage linking to previous expressions or discussions where appropriate.
+- Encourage linking to previous expressions or discussions where appropriate.
 
 Examples:
 
 - Is this expression part of a model, an assumption, a result, or an optimization goal?
- - Does this equation introduce any assumptions that impact the paper's conclusions?
+- Does this equation introduce any assumptions that impact the paper's conclusions?
 - How does this sentence connect to the author's findings from the previous paragraph?
 
 
@@ -365,6 +365,11 @@ export async function POST(req: Request) {
     ? `${systemPrompt}\n\nThe user has selected the following text from the PDF:\n\n${selectedText}`
     : systemPrompt;
 
+  // Add instruction to generate response in latex
+  const latexInstruction = `You are a helpful assistant. Write all math expressions in your response in LaTeX syntax using $...$ for inline math and $$...$$ for block math. Do not explain the LaTeX.
+  Wrap all function names like softmax or Attention in \\text{}. Use \\mathbb{R} for real-valued spaces, and always format vectors/matrices with proper subscripts and shapes.`;
+  const enhancedSystemPromptWithLatex = `${latexInstruction}\n\n${enhancedSystemPrompt}`;
+
   if (selectedText) {
     console.log("API - Enhanced system prompt with selected text");
   }
@@ -401,7 +406,7 @@ export async function POST(req: Request) {
 
   // Add system message at the beginning of the conversation
   const fullMessages = [
-    { role: "user", content: enhancedSystemPrompt },
+    { role: "user", content: enhancedSystemPromptWithLatex },
     ...formattedMessages,
   ];
 
