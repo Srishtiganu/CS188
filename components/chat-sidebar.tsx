@@ -109,7 +109,7 @@ export default function ChatSidebar({
   // Memoize suggestions rendering
   const renderedSuggestions = useMemo(() => {
     const suggestionsToShow = showMoreSuggestions
-      ? suggestions.slice(0, 7)
+      ? suggestions.slice(0, 6)
       : suggestions.slice(0, 3);
 
     return suggestionsToShow.map((suggestion) => (
