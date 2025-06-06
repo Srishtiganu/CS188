@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { InlineMath } from "react-katex"; //support latex rendering
 
 import { useState, useRef, useEffect, useMemo, useDeferredValue } from "react";
 import type { Message } from "ai";
@@ -106,10 +107,22 @@ export default function ChatSidebar({
   // Show more suggestions state
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
 
+  //Support Latex rendering in suggestion bar
+  function renderWithLatex(text: string) {
+  const parts = text.split(/(\$[^$]+\$)/g); // split by $...$
+  return parts.map((part, i) =>
+    /^\$.*\$$/.test(part) ? (
+      <InlineMath key={i} math={part.slice(1, -1)} />
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
   // Memoize suggestions rendering
   const renderedSuggestions = useMemo(() => {
     const suggestionsToShow = showMoreSuggestions
-      ? suggestions.slice(0, 7)
+      ? suggestions.slice(0, 6)
       : suggestions.slice(0, 3);
 
     return suggestionsToShow.map((suggestion) => (
@@ -123,7 +136,7 @@ export default function ChatSidebar({
         onClick={() => handleSuggestionClick(suggestion)}
       >
         <Lightbulb className="h-3 w-3 text-yellow-500 flex-shrink-0" />
-        <span className="text-left">{suggestion}</span>
+        <span className="text-left">{renderWithLatex(suggestion)}</span>
       </button>
     ));
   }, [suggestions, selectedSuggestion, showMoreSuggestions]);
