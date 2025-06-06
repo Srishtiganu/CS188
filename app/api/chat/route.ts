@@ -196,7 +196,8 @@ Important:
 - Ensure the questions are specific, diverse, and do not overlap across categories.
 - Customize to the user's background and reading goal.
 - Use the conversation history provided to generate contextually relevant questions. Pay special attention to the most recent message for generating suggestions.
-- All mathematical expressions in your output must be formatted in LaTeX.
+- Write all math expressions in your response in LaTeX syntax using $...$ for inline math and $$...$$ for block math. Do not explain the LaTeX.
+  Wrap all function names like softmax or Attention in $\\text{}$. Use \\mathbb{R} for real-valued spaces, and always format vectors/matrices with proper subscripts and shapes.
 
 
 Based on the provided paper context, selected expression, user profile, and conversation history, generate 6 thoughtful and diverse suggested questions. Distribute them across the following categories:
@@ -367,7 +368,7 @@ export async function POST(req: Request) {
 
   // Add instruction to generate response in latex
   const latexInstruction = `You are a helpful assistant. Write all math expressions in your response in LaTeX syntax using $...$ for inline math and $$...$$ for block math. Do not explain the LaTeX.
-  Wrap all function names like softmax or Attention in \\text{}. Use \\mathbb{R} for real-valued spaces, and always format vectors/matrices with proper subscripts and shapes.`;
+  Wrap all function names like softmax or Attention in $\\text{}$. Use \\mathbb{R} for real-valued spaces, and always format vectors/matrices with proper subscripts and shapes.`;
   const enhancedSystemPromptWithLatex = `${latexInstruction}\n\n${enhancedSystemPrompt}`;
 
   if (selectedText) {
