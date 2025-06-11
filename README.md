@@ -2,6 +2,7 @@
 ![Image 5-25-25 at 12 03 PM](https://github.com/user-attachments/assets/18c71080-6290-4747-a569-6aaae877bc7f)
 
 Deployed here: [link to our project!](https://amazingcs188interdisvizgroupproject.vercel.app/) 
+
 This is a Next.js project built with TypeScript and Tailwind CSS.
 
 ## Prerequisites
